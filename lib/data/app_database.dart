@@ -15,12 +15,22 @@ class AppDatabase {
     final dir = await getDatabasesPath();
     final db = await openDatabase(
       p.join(dir, 'calc_money.db'),
-      version: 1,
+      version: 2,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
     _db = db;
     return db;
+  }
+
+  Future<void> _onUpgrade(Database db, int eski, int yeni) async {
+    if (eski < 2) {
+      // v2: sabit kayıtlar artık gelir de olabilir. Mevcut satırlar gider (1) sayılır.
+      await db.execute(
+        'ALTER TABLE recurring_expenses ADD COLUMN type INTEGER NOT NULL DEFAULT 1',
+      );
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -49,6 +59,7 @@ class AppDatabase {
       CREATE TABLE recurring_expenses(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
+        type INTEGER NOT NULL DEFAULT 1,
         amount_kurus INTEGER NOT NULL CHECK (amount_kurus >= 0),
         day_of_month INTEGER NOT NULL CHECK (day_of_month BETWEEN 1 AND 28),
         category_id INTEGER NOT NULL REFERENCES categories(id),

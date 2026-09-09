@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/category.dart';
+import '../models/record_type.dart';
 import '../models/recurring_expense.dart';
 import '../state/app_state.dart';
 import '../utils/money.dart';
 import 'category_visual.dart';
 
-/// Tekrarlayan sabit gider ekleme/düzenleme alt sayfası (bottom sheet).
+/// Tekrarlayan sabit kayıt (gider veya gelir) ekleme/düzenleme alt sayfası.
 Future<void> showRecurringEditor(
   BuildContext context, {
   RecurringExpense? mevcut,
@@ -40,6 +41,7 @@ class RecurringEditor extends StatefulWidget {
 class _RecurringEditorState extends State<RecurringEditor> {
   late final TextEditingController _ad;
   late final TextEditingController _tutar;
+  late RecordType _tip;
   late int _gun;
   int? _kategoriId;
   bool _bildirim = true;
@@ -52,6 +54,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
     super.initState();
     final m = widget.mevcut;
     _ad = TextEditingController(text: m?.name ?? '');
+    _tip = m?.type ?? RecordType.gider;
     _tutar = TextEditingController(
       text: m != null ? kurusToGirdi(m.amountKurus) : '',
     );
@@ -70,7 +73,9 @@ class _RecurringEditorState extends State<RecurringEditor> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final secenekler = state.giderKategorileri;
+    final secenekler = _tip == RecordType.gelir
+        ? state.gelirKategorileri
+        : state.giderKategorileri;
     final secili = _seciliKategori(secenekler);
 
     return SingleChildScrollView(
@@ -91,7 +96,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
           ),
           const SizedBox(height: 16),
           Text(
-            _duzenleme ? 'Sabit Gideri Düzenle' : 'Yeni Sabit Gider',
+            _duzenleme ? 'Sabit Kaydı Düzenle' : 'Yeni Sabit Kayıt',
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
@@ -99,14 +104,37 @@ class _RecurringEditorState extends State<RecurringEditor> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Abonelik, kira, fatura gibi her ay tekrarlayan giderler.',
+            'Her ay tekrarlayan gider (kira, abonelik, fatura) veya gelir '
+            '(kira getirisi, temettü vb.) ekleyebilirsin.',
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          SegmentedButton<RecordType>(
+            segments: const [
+              ButtonSegment(
+                value: RecordType.gelir,
+                label: Text('Gelir'),
+                icon: Icon(Icons.north_east),
+              ),
+              ButtonSegment(
+                value: RecordType.gider,
+                label: Text('Gider'),
+                icon: Icon(Icons.south_west),
+              ),
+            ],
+            selected: {_tip},
+            onSelectionChanged: (secim) {
+              setState(() {
+                _tip = secim.first;
+                _kategoriId = null;
+              });
+            },
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _ad,
             decoration: const InputDecoration(
-              labelText: 'Ad (örn. Netflix, Kira, Doğalgaz)',
+              labelText: 'Ad (örn. Netflix, Kira, Fon getirisi)',
               border: OutlineInputBorder(),
             ),
           ),
@@ -163,7 +191,8 @@ class _RecurringEditorState extends State<RecurringEditor> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Aylık hatırlatma bildirimi'),
-            subtitle: const Text('Seçilen günde saat 09:00\'da bildirim gönderilir.'),
+            subtitle: const Text(
+                'Seçilen günde saat 09:00\'da bildirim gönderilir.'),
             value: _bildirim,
             onChanged: (v) => setState(() => _bildirim = v),
           ),
@@ -201,7 +230,10 @@ class _RecurringEditorState extends State<RecurringEditor> {
       return;
     }
     final state = context.read<AppState>();
-    final secili = _seciliKategori(state.giderKategorileri);
+    final secenekler = _tip == RecordType.gelir
+        ? state.gelirKategorileri
+        : state.giderKategorileri;
+    final secili = _seciliKategori(secenekler);
     if (secili == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen bir kategori seçin.')),
@@ -213,6 +245,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
       await state.tekrarlayanGuncelle(
         mevcut,
         name: _ad.text.trim(),
+        type: _tip,
         amountKurus: kurus,
         dayOfMonth: _gun,
         categoryId: secili.id,
@@ -221,6 +254,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
     } else {
       await state.tekrarlayanEkle(
         name: _ad.text.trim(),
+        type: _tip,
         amountKurus: kurus,
         dayOfMonth: _gun,
         categoryId: secili.id,

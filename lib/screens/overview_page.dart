@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'category_analysis.dart';
 import '../models/record_type.dart';
 import '../models/transaction_record.dart';
 import '../state/app_state.dart';
@@ -26,7 +27,23 @@ class OverviewPage extends StatelessWidget {
     final state = context.watch<AppState>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Genel Bakış')),
+      appBar: AppBar(
+        title: const Text('Genel Bakış'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const CategoryAnalysisPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.query_stats),
+            tooltip: 'Kategori analizi',
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -46,7 +63,7 @@ class OverviewPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _SabitGiderlerKarti(state: state, onSabitleriGoster: onSabitleriGoster),
+          _SabitlerKarti(state: state, onSabitleriGoster: onSabitleriGoster),
           const SizedBox(height: 16),
           _SonKayitlarKarti(state: state, onKayitlariGoster: onKayitlariGoster),
         ],
@@ -55,11 +72,11 @@ class OverviewPage extends StatelessWidget {
   }
 }
 
-class _SabitGiderlerKarti extends StatelessWidget {
+class _SabitlerKarti extends StatelessWidget {
   final AppState state;
   final VoidCallback onSabitleriGoster;
 
-  const _SabitGiderlerKarti({
+  const _SabitlerKarti({
     required this.state,
     required this.onSabitleriGoster,
   });
@@ -67,49 +84,70 @@ class _SabitGiderlerKarti extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
-    final aktifler = state.tekrarlayanListesi.where((k) => k.active).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
             children: [
-              CircleAvatar(
-                backgroundColor:
-                    tema.colorScheme.primaryContainer.withValues(alpha: 0.6),
-                child: Icon(Icons.notifications_active_outlined,
-                    color: tema.colorScheme.onPrimaryContainer),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Aylık sabit giderler',
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Aylık sabit kayıtlar',
                         style: tema.textTheme.titleSmall),
-                    const SizedBox(height: 2),
-                    Text(
-                      aktifler.isEmpty
-                          ? 'Henüz tanımlanmamış.'
-                          : '${aktifler.length} adet • ${formatMoney(state.aktifTekrarlayanToplam)}',
-                      style: tema.textTheme.bodyMedium?.copyWith(
-                        color: tema.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    onPressed: onSabitleriGoster,
+                    icon: const Icon(Icons.chevron_right),
+                    tooltip: 'Sabit kayıtları yönet',
+                  ),
+                ],
               ),
-              IconButton(
-                onPressed: onSabitleriGoster,
-                icon: const Icon(Icons.chevron_right),
-                tooltip: 'Sabit giderleri yönet',
+              const Divider(height: 8),
+              _SabitOzetSatir(
+                label: 'Sabit gelir',
+                deger: formatMoney(state.aktifSabitGelirToplam),
+                renk: gelirRengi(context),
+              ),
+              const SizedBox(height: 8),
+              _SabitOzetSatir(
+                label: 'Sabit gider',
+                deger: formatMoney(state.aktifSabitGiderToplam),
+                renk: giderRengi(context),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SabitOzetSatir extends StatelessWidget {
+  final String label;
+  final String deger;
+  final Color renk;
+
+  const _SabitOzetSatir({
+    required this.label,
+    required this.deger,
+    required this.renk,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    return Row(
+      children: [
+        Expanded(child: Text(label, style: tema.textTheme.bodyMedium)),
+        Text(
+          deger,
+          style: tema.textTheme.titleSmall
+              ?.copyWith(color: renk, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 }

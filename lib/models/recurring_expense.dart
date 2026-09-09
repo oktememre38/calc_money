@@ -1,10 +1,14 @@
-/// Tekrarlayan (sabit) gider: abonelik, kira, fatura vb.
+import 'record_type.dart';
+
+/// Tekrarlayan sabit kayıt: abonelik, kira, fatura (gider) veya kira geliri,
+/// fon/temettü getirisi gibi tekrarlayan gelir.
 ///
-/// Her ayın `dayOfMonth` gününde bildirim ile hatırlatılır; aylık gider kaydına
-/// otomatik işlenmez (kullanıcı kaydı kendisi ekler).
+/// Her ayın `dayOfMonth` gününde bildirim ile hatırlatılır; aylık kayda
+/// otomatik işlenmez (kullanıcı "Aylara ekle" ile istediği aylara ekler).
 class RecurringExpense {
   final int? id;
   final String name;
+  final RecordType type;
   final int amountKurus;
   final int dayOfMonth; // 1..28
   final int categoryId;
@@ -15,6 +19,7 @@ class RecurringExpense {
   const RecurringExpense({
     this.id,
     required this.name,
+    this.type = RecordType.gider,
     required this.amountKurus,
     required this.dayOfMonth,
     required this.categoryId,
@@ -25,6 +30,7 @@ class RecurringExpense {
 
   Map<String, Object?> toMap() => {
         'name': name,
+        'type': type.toDb,
         'amount_kurus': amountKurus,
         'day_of_month': dayOfMonth,
         'category_id': categoryId,
@@ -36,6 +42,7 @@ class RecurringExpense {
   factory RecurringExpense.fromMap(Map<String, Object?> m) => RecurringExpense(
         id: m['id'] as int?,
         name: m['name'] as String,
+        type: recordTypeFromDb((m['type'] as int?) ?? 1),
         amountKurus: m['amount_kurus'] as int,
         dayOfMonth: m['day_of_month'] as int,
         categoryId: m['category_id'] as int,
@@ -47,6 +54,7 @@ class RecurringExpense {
   RecurringExpense copyWith({
     int? id,
     String? name,
+    RecordType? type,
     int? amountKurus,
     int? dayOfMonth,
     int? categoryId,
@@ -56,6 +64,7 @@ class RecurringExpense {
       RecurringExpense(
         id: id ?? this.id,
         name: name ?? this.name,
+        type: type ?? this.type,
         amountKurus: amountKurus ?? this.amountKurus,
         dayOfMonth: dayOfMonth ?? this.dayOfMonth,
         categoryId: categoryId ?? this.categoryId,

@@ -60,7 +60,7 @@ class _TransactionEditorState extends State<TransactionEditor> {
     super.initState();
     final m = widget.mevcut;
     final k = widget.kaynak;
-    _tip = m?.type ?? RecordType.gider;
+    _tip = m?.type ?? k?.type ?? RecordType.gider;
     final ilkTutar = m?.amountKurus ?? k?.amountKurus ?? 0;
     _tutar = TextEditingController(
       text: ilkTutar > 0 ? kurusToGirdi(ilkTutar) : '',

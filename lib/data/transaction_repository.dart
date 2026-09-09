@@ -65,6 +65,57 @@ class TransactionRepository {
     ];
   }
 
+  /// Bir yıl içinde her kategorinin gelir/gider toplamları (kategoriId -> toplam).
+  Future<Map<int, Aggregate>> kategoriYillikToplamlar(int year) async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT '
+      'category_id, '
+      'COALESCE(SUM(CASE WHEN type = 0 THEN amount_kurus END), 0) AS gelir, '
+      'COALESCE(SUM(CASE WHEN type = 1 THEN amount_kurus END), 0) AS gider '
+      'FROM transactions WHERE substr(date, 1, 4) = ? '
+      'GROUP BY category_id',
+      ['$year'],
+    );
+    return {
+      for (final row in rows)
+        row['category_id'] as int: Aggregate(
+          income: row['gelir'] as int,
+          expense: row['gider'] as int,
+        ),
+    };
+  }
+
+  /// Tek bir kategorinin bir yıldaki aylık toplamları (ay 1..12).
+  Future<List<MonthlySummary>> kategoriYillikAylik(
+    int year,
+    int categoryId,
+  ) async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT '
+      'CAST(substr(date, 6, 2) AS INTEGER) AS ay, '
+      'COALESCE(SUM(CASE WHEN type = 0 THEN amount_kurus END), 0) AS gelir, '
+      'COALESCE(SUM(CASE WHEN type = 1 THEN amount_kurus END), 0) AS gider '
+      'FROM transactions '
+      'WHERE substr(date, 1, 4) = ? AND category_id = ? '
+      'GROUP BY ay ORDER BY ay',
+      ['$year', categoryId],
+    );
+
+    final map = <int, Aggregate>{};
+    for (final row in rows) {
+      map[row['ay'] as int] = Aggregate(
+        income: row['gelir'] as int,
+        expense: row['gider'] as int,
+      );
+    }
+    return [
+      for (var ay = 1; ay <= 12; ay++)
+        MonthlySummary(month: ay, aggregate: map[ay] ?? const Aggregate()),
+    ];
+  }
+
   Future<int> insert(TransactionRecord kayit) async {
     final db = await _db.database;
     return db.insert('transactions', kayit.toMap());

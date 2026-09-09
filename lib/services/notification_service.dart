@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../models/record_type.dart';
 import '../models/recurring_expense.dart';
 import '../utils/money.dart';
 
@@ -73,7 +74,9 @@ class NotificationService {
 
         await _plugin.zonedSchedule(
           id,
-          'Gider hatırlatması',
+          kayit.type == RecordType.gelir
+              ? 'Gelir hatırlatması'
+              : 'Gider hatırlatması',
           '${kayit.name}: ${formatMoney(kayit.amountKurus)}',
           zaman,
           const NotificationDetails(

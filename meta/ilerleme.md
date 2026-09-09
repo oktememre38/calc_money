@@ -3,6 +3,24 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (4. oturum) — v0.3.0: sabit gelir + gruplama + kategori analizi
+Kullanıcı istekleriyle birlikte uygulanan 5 madde:
+1. **Sabit kayıtlar gelir/gider olabiliyor:** DB v2 göçü (`recurring_expenses` → `type` sütunu,
+   mevcut kayıtlar gider sayılır, veri KAYBOLMAZ). Editor'de Gelir/Gider seçimi + gelir kategorileri.
+2. **Sabitler sayfası kategoriye göre gruplandı** (gider kategorileri önce); sayfada aylık sabit
+   gelir/gider özet kartı eklendi.
+3. **Genel Bakış'ta "aylık sabit gelir + sabit gider"** kartı.
+4. **"Aylara ekle" penceresi:** daha önce eklenen aylar "kayıtlı" görünüp kilitli; yalnızca boş aylar seçilebiliyor.
+5. **Kategori Analizi:** Genel Bakış ve Kayıtlar'ın üstündeki analiz ikonuyla açılıyor; kategoriye
+   dokununca o yılın ay ay değişimi (çubuk + tutar). Yıllık kategori toplamları.
+- Ayrıca: toplu ekleme tipi (gelir kaydı gider yerine yanlış eklenmez), bildirim metni gelir/gider'e göre.
+- Dosyalar: `app_database.dart` (v2 göç), `models/recurring_expense.dart`, `state/app_state.dart`,
+  `data/transaction_repository.dart` (kategori sorguları), `widgets/recurring_editor.dart`,
+  `widgets/recurring_months_sheet.dart`, `screens/recurring_page.dart`, `screens/overview_page.dart`,
+  `screens/records_page.dart`, yeni `screens/category_analysis.dart`.
+- Sürüm: `0.3.0+3`. `flutter analyze` temiz, `flutter test` 12/12, `flutter build apk` başarılı (53,0 MB).
+- Not: Telefona kurarken KALDIRMA; üzerine güncelle. İlk açılışta DB göçü otomatik çalışır.
+
 ## 2026-09-09 (3. oturum) — Sabit giderleri "aylara tik atıp" toplu ekleme (v0.2.0)
 - **İstek:** Sabit giderler her ay "⋮ menü → bu ay için kayıt ekle" ile elle eklenmesin;
   kullanıcı istediği aylara tik atsın, onlar otomatik kayda geçsin.

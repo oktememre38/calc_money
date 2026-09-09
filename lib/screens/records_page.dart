@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/record_type.dart';
 import '../models/transaction_record.dart';
 import '../state/app_state.dart';
+import 'category_analysis.dart';
 import '../utils/dates.dart';
 import '../utils/money.dart';
 import '../widgets/category_visual.dart';
@@ -20,7 +21,23 @@ class RecordsPage extends StatelessWidget {
     final state = context.watch<AppState>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kayıtlar')),
+      appBar: AppBar(
+        title: const Text('Kayıtlar'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const CategoryAnalysisPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.query_stats),
+            tooltip: 'Kategori analizi',
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => showTransactionEditor(context),
         tooltip: 'Kayıt ekle',

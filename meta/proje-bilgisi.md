@@ -59,7 +59,15 @@ MVP (ilk sürüm — mevcut):
 - Yıllık döküm (12 ay + yıl toplamı)
 - Tekrarlayan sabit gider yönetimi + aylık bildirim
 
-Sonraki adımlar (öncelik sırasız):
+Sonraki adımlar:
+Tamamlanan (v0.3.0):
+- [x] Kategoriye dokununca o kategorinin **aylık değişim/toplam görünümü** (örn. Su: Eylül 400, Ekim 320, Kasım 500...) — değişken giderleri (su/elektrik/doğalgaz/market) takip için — kullanıcı isteği (3. oturum)
+- [x] Özet/Genel Bakış, sabit giderlerin yanında **"aylık sabit gelirler"**i de göstersin — kullanıcı isteği (3. oturum)
+- [x] "Sabitler" bölümü **gelir + gider** tekrarlayan kayıtları desteklesin. Veritabanına tip sütunu eklendi (v2 göç, mevcut veriler korunur) — kullanıcı isteği (3. oturum)
+- [x] Sabit Kayıtlar sayfasında kayıtlar **kategoriye göre gruplansın** — kullanıcı isteği (3. oturum)
+- [x] "Aylara ekle" penceresinde, o ay zaten aynı sabit kayıtla kayıtlıysa ay **"kayıtlı"** görünüp kilitlensin — kullanıcı isteği (3. oturum)
+
+Bekleyen (öncelik sırasız):
 - [ ] Kullanıcı tanımlı kategori ekleme
 - [ ] Kategoriye göre grafikler (pasta/çubuk)
 - [ ] DB yedekleme / dışa aktarma (CSV/JSON)

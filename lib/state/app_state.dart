@@ -64,10 +64,23 @@ class AppState extends ChangeNotifier {
     return Aggregate(income: gelir, expense: gider);
   }
 
-  int get aktifTekrarlayanToplam {
+  List<RecurringExpense> get aktifTekrarlayanlar =>
+      _tekrarlayanListesi.where((k) => k.active).toList();
+
+  /// Aktif tekrarlayan kayıtların gelir toplamı.
+  int get aktifSabitGelirToplam {
     var toplam = 0;
-    for (final k in _tekrarlayanListesi) {
-      if (k.active) toplam += k.amountKurus;
+    for (final k in aktifTekrarlayanlar) {
+      if (k.type == RecordType.gelir) toplam += k.amountKurus;
+    }
+    return toplam;
+  }
+
+  /// Aktif tekrarlayan kayıtların gider toplamı.
+  int get aktifSabitGiderToplam {
+    var toplam = 0;
+    for (final k in aktifTekrarlayanlar) {
+      if (k.type == RecordType.gider) toplam += k.amountKurus;
     }
     return toplam;
   }
@@ -191,6 +204,7 @@ class AppState extends ChangeNotifier {
   // --- Tekrarlayan sabit giderler ---
   Future<void> tekrarlayanEkle({
     required String name,
+    RecordType type = RecordType.gider,
     required int amountKurus,
     required int dayOfMonth,
     required int categoryId,
@@ -199,6 +213,7 @@ class AppState extends ChangeNotifier {
     await tekrarlayanlar.insert(
       RecurringExpense(
         name: name,
+        type: type,
         amountKurus: amountKurus,
         dayOfMonth: dayOfMonth,
         categoryId: categoryId,
@@ -213,6 +228,7 @@ class AppState extends ChangeNotifier {
   Future<void> tekrarlayanGuncelle(
     RecurringExpense mevcut, {
     required String name,
+    RecordType? type,
     required int amountKurus,
     required int dayOfMonth,
     required int categoryId,
@@ -221,6 +237,7 @@ class AppState extends ChangeNotifier {
     await tekrarlayanlar.update(
       mevcut.copyWith(
         name: name,
+        type: type ?? mevcut.type,
         amountKurus: amountKurus,
         dayOfMonth: dayOfMonth,
         categoryId: categoryId,
@@ -242,13 +259,13 @@ class AppState extends ChangeNotifier {
     await _tekrarlayanSonrasiYenile();
   }
 
-  /// Bir sabit gideri seçilen aylara toplu olarak kayıt olarak ekler.
+  /// Bir sabit kaydı (gelir veya gider) seçilen aylara toplu olarak ekler.
   ///
-  /// Her ay için sabit giderin gününde bir gider kaydı oluşturulur. O ay içinde
-  /// birebir aynı kayıt (aynı kategori + tutar + not) zaten varsa o ay atlanır
-  /// (çift kayıt koruması). Dönen değer: (eklenen, atlanan).
+  /// Her ay için sabit kaydın gününde, kendi tipinde (gelir/gider) bir kayıt
+  /// oluşturulur. O ay içinde birebir aynı kayıt (tip + kategori + tutar + not)
+  /// zaten varsa o ay atlanır (çift kayıt koruması). Dönen değer: (eklenen, atlanan).
   Future<({int eklenen, int atlanan})> tekrarlayanTopluEkle(
-    RecurringExpense gider,
+    RecurringExpense sabit,
     List<DateTime> aylar,
   ) async {
     var eklenen = 0;
@@ -261,10 +278,10 @@ class AppState extends ChangeNotifier {
 
       final mevcutlar = await islemler.listByMonth(ay.year, ay.month);
       final zatenVar = mevcutlar.any((k) =>
-          k.type == RecordType.gider &&
-          k.categoryId == gider.categoryId &&
-          k.amountKurus == gider.amountKurus &&
-          k.note == gider.name);
+          k.type == sabit.type &&
+          k.categoryId == sabit.categoryId &&
+          k.amountKurus == sabit.amountKurus &&
+          k.note == sabit.name);
       if (zatenVar) {
         atlanan++;
         continue;
@@ -272,11 +289,11 @@ class AppState extends ChangeNotifier {
 
       await islemler.insert(
         TransactionRecord(
-          type: RecordType.gider,
-          amountKurus: gider.amountKurus,
-          categoryId: gider.categoryId,
-          date: _dateKey(DateTime(ay.year, ay.month, gider.dayOfMonth)),
-          note: gider.name,
+          type: sabit.type,
+          amountKurus: sabit.amountKurus,
+          categoryId: sabit.categoryId,
+          date: _dateKey(DateTime(ay.year, ay.month, sabit.dayOfMonth)),
+          note: sabit.name,
           createdAt: DateTime.now().toIso8601String(),
         ),
       );
@@ -285,6 +302,28 @@ class AppState extends ChangeNotifier {
 
     await _kayitSonrasiYenile();
     return (eklenen: eklenen, atlanan: atlanan);
+  }
+
+  /// Verilen ayların hangilerinde bu sabit kayıtla birebir aynı bir kayıt
+  /// zaten var, onu döner (anahtar "yıl-ay"). "Aylara ekle" penceresi,
+  /// daha önce eklenmiş ayları işaretli/kilitli göstermek için kullanır.
+  Future<Map<String, bool>> tekrarlayanAyKayitlari(
+    RecurringExpense sabit,
+    List<DateTime> aylar,
+  ) async {
+    final durum = <String, bool>{};
+    final gorulen = <String>{};
+    for (final ay in aylar) {
+      final anahtar = '${ay.year}-${ay.month}';
+      if (!gorulen.add(anahtar)) continue;
+      final mevcutlar = await islemler.listByMonth(ay.year, ay.month);
+      durum[anahtar] = mevcutlar.any((k) =>
+          k.type == sabit.type &&
+          k.categoryId == sabit.categoryId &&
+          k.amountKurus == sabit.amountKurus &&
+          k.note == sabit.name);
+    }
+    return durum;
   }
 
   // --- Yardımcı yükleyiciler ---
