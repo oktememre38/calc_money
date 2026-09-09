@@ -8,6 +8,9 @@ class TransactionRecord {
   final int categoryId;
   final String date; // ISO "yyyy-MM-dd"
   final String note;
+
+  /// Bu kayıt bir sabit kayıttan oluşturulduysa o sabit kaydın id'si (yoksa null).
+  final int? recurringId;
   final String createdAt;
 
   const TransactionRecord({
@@ -17,6 +20,7 @@ class TransactionRecord {
     required this.categoryId,
     required this.date,
     this.note = '',
+    this.recurringId,
     this.createdAt = '',
   });
 
@@ -26,6 +30,7 @@ class TransactionRecord {
         'category_id': categoryId,
         'date': date,
         'note': note,
+        'recurring_id': recurringId,
         'created_at': createdAt,
       };
 
@@ -36,6 +41,7 @@ class TransactionRecord {
         categoryId: m['category_id'] as int,
         date: m['date'] as String,
         note: (m['note'] as String?) ?? '',
+        recurringId: m['recurring_id'] as int?,
         createdAt: (m['created_at'] as String?) ?? '',
       );
 
@@ -46,6 +52,7 @@ class TransactionRecord {
     int? categoryId,
     String? date,
     String? note,
+    int? recurringId,
   }) =>
       TransactionRecord(
         id: id ?? this.id,
@@ -54,6 +61,7 @@ class TransactionRecord {
         categoryId: categoryId ?? this.categoryId,
         date: date ?? this.date,
         note: note ?? this.note,
+        recurringId: recurringId ?? this.recurringId,
         createdAt: createdAt,
       );
 }

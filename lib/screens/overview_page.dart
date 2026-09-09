@@ -32,6 +32,16 @@ class OverviewPage extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
+              final appState = context.read<AppState>();
+              appState.temaDegistir(!appState.karanlikTema);
+            },
+            icon: Icon(
+              state.karanlikTema ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            ),
+            tooltip: state.karanlikTema ? 'Gündüz teması' : 'Karanlık tema',
+          ),
+          IconButton(
+            onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(

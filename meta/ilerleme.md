@@ -3,6 +3,37 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (7. oturum) — v0.4.0: karanlık tema, geri al, açılır/kapanır gruplar, kopyalama
+Bu sürüm aynı zamanda v0.3.2'nin iki düzeltmesini de içerir (sabit→aylık güncelleme, analizde yıl okları).
+- **Karanlık tema:** Açık/gece tema. Tercih DB'deki yeni `settings` tablosunda saklanır (DB v4).
+  Genel Bakış üstündeki 🌙/☀ ikonuyla değişir. `theme.dart` (dark), `app.dart`/`main.dart`
+  (provider sarmalama + themeMode), `state/app_state.dart` (tema ayarı).
+- **Silmeyi geri al (undo):** Kayıt ve sabit kayıt silmelerinde "Geri al" çubuğu.
+  `app_state.dart` (son silinen tamponu + `sonSilineniGeriAl`), `records_page.dart`,
+  `recurring_page.dart` (snackbar).
+- **Sabit grupları açılır/kapanır:** Kategori başlığına dokununca içindekiler açılır/kapanır
+  (ExpansionTile). `screens/recurring_page.dart`.
+- **Kayıt kopyalama (klonla):** Kayıt satırındaki ⋮ menüsünde "Kopyala" — yeni kayıt olarak
+  ön doldurulmuş açılır. `widgets/transaction_editor.dart` (`kopya` parametresi), `records_page.dart`.
+- Sürüm: `0.4.0+6`. `flutter analyze` temiz, `flutter test` 12/12, `flutter build apk` başarılı (53,3 MB).
+
+## 2026-09-09 (6. oturum) — v0.3.2: sabit kayıt düzenlenince aylık kayıtlar da güncellenir (bug düzeltmesi)
+- **Bug:** Sabit kaydın kategorisi değiştirilince, o sabit kayıttan oluşturulmuş aylık
+  kayıtlar eski kategoride kalıyordu.
+- **Neden:** Aylık kayıtlar oluşturulduğu andaki değerleri saklıyor; sabit kayıtla bağları yoktu.
+- **Çözüm:** DB v3 göçü — `transactions` tablosuna `recurring_id` sütunu. "Aylara ekle" ve
+  "bu ay için kayıt ekle" ile üretilen kayıtlar artık sabit kayda **bağlı**. Sabit kayıt
+  düzenlenince bağlı kayıtlar + eski sürümlerde üretilmiş (birebir eski değerlerle eşleşen)
+  kayıtlar otomatik eşitleniyor (kategori/tutar/isim/tip).
+- **Dosyalar:** `app_database.dart` (v3), `models/transaction_record.dart` (recurringId),
+  `data/transaction_repository.dart` (`esitleTekrarlayanKayitlari`), `state/app_state.dart`
+  (bağlama + eşitleme), `widgets/transaction_editor.dart`.
+- Sürüm: `0.3.2+5`. `flutter analyze` temiz, `flutter test` 12/12, `flutter build apk` başarılı (53,0 MB).
+- **Ek düzeltme:** Kategori Analizi'nde seçilen yılda kayıt yoksa yıl okları kayboluyordu;
+  yıl seçici artık her durumda görünüyor (boş yıldan ileri/geri gitmek mümkün).
+- **Test notu:** Kullanıcı, güncelleme sonrası sabit kaydı bir kez düzenleyip kaydederse
+  eski aylık kayıtlar da düzelir.
+
 ## 2026-09-09 (5. oturum) — v0.3.1: açılış ekranı + kayıt satırları zenginleşti
 - **Açılış (splash) ekranı:** Uygulama açılınca CalcMoney logosu (kumbara ikonu + "CalcMoney"
   + "Gelir · Gider · Takip") ~1,7 sn görünüp yumuşak geçişle Genel Bakış'a gidiyor.

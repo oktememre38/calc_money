@@ -116,6 +116,52 @@ class TransactionRepository {
     ];
   }
 
+  /// Bir sabit kayıt düzenlendiğinde, o sabit kayıttan üretilmiş aylık kayıtları
+  /// yeni değerlere eşitler. Hem doğrudan bağlı (`recurring_id`) kayıtlar hem de
+  /// eski sürümlerde oluşturulup bağlanmamış ama birebir eski şablon değerleriyle
+  /// eşleşen kayıtlar güncellenir.
+  Future<void> esitleTekrarlayanKayitlari({
+    required int recurringId,
+    required int eskiTypeDb,
+    required int eskiAmountKurus,
+    required int eskiCategoryId,
+    required String eskiNote,
+    required int yeniTypeDb,
+    required int yeniAmountKurus,
+    required int yeniCategoryId,
+    required String yeniNote,
+  }) async {
+    final db = await _db.database;
+
+    // Henüz bağlanmamış ama eski şablon değerleriyle birebir eşleşen kayıtlar.
+    await db.update(
+      'transactions',
+      {
+        'type': yeniTypeDb,
+        'amount_kurus': yeniAmountKurus,
+        'category_id': yeniCategoryId,
+        'note': yeniNote,
+        'recurring_id': recurringId,
+      },
+      where: 'recurring_id IS NULL '
+          'AND type = ? AND category_id = ? AND amount_kurus = ? AND note = ?',
+      whereArgs: [eskiTypeDb, eskiCategoryId, eskiAmountKurus, eskiNote],
+    );
+
+    // Bağlı kayıtlar.
+    await db.update(
+      'transactions',
+      {
+        'type': yeniTypeDb,
+        'amount_kurus': yeniAmountKurus,
+        'category_id': yeniCategoryId,
+        'note': yeniNote,
+      },
+      where: 'recurring_id = ?',
+      whereArgs: [recurringId],
+    );
+  }
+
   Future<int> insert(TransactionRecord kayit) async {
     final db = await _db.database;
     return db.insert('transactions', kayit.toMap());

@@ -72,30 +72,46 @@ class _CategoryAnalysisPageState extends State<CategoryAnalysisPage> {
       appBar: AppBar(title: const Text('Kategori Analizi')),
       body: _yukleniyor
           ? const Center(child: CircularProgressIndicator())
-          : kategoriler.isEmpty
-              ? EmptyState(
-                  icon: Icons.query_stats,
-                  mesaj: '$_yil yılı için kayıt yok.\nÖnce Kayıtlar\'dan '
-                      'gelir/gider ekle.',
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    YearSelector(
-                      year: _yil,
-                      onOnceki: _oncekiYil,
-                      onSonraki: _sonrakiYil,
-                      onBuguneDon: _buYilaDon,
-                    ),
-                    const SizedBox(height: 4),
-                    for (final kategori in kategoriler)
-                      _KategoriSatir(
-                        kategori: kategori,
-                        toplam: _tipTutari(kategori, _toplamlar[kategori.id]!),
-                        yil: _yil,
-                      ),
-                  ],
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                YearSelector(
+                  year: _yil,
+                  onOnceki: _oncekiYil,
+                  onSonraki: _sonrakiYil,
+                  onBuguneDon: _buYilaDon,
                 ),
+                const SizedBox(height: 8),
+                if (kategoriler.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 56),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.query_stats,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '$_yil yılı için kayıt yok.\nÖnce Kayıtlar\'dan gelir/gider ekle.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  for (final kategori in kategoriler)
+                    _KategoriSatir(
+                      kategori: kategori,
+                      toplam: _tipTutari(kategori, _toplamlar[kategori.id]!),
+                      yil: _yil,
+                    ),
+              ],
+            ),
     );
   }
 }

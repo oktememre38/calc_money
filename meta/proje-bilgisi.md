@@ -67,9 +67,15 @@ Tamamlanan (v0.3.0):
 - [x] Sabit Kayıtlar sayfasında kayıtlar **kategoriye göre gruplansın** — kullanıcı isteği (3. oturum)
 - [x] "Aylara ekle" penceresinde, o ay zaten aynı sabit kayıtla kayıtlıysa ay **"kayıtlı"** görünüp kilitlensin — kullanıcı isteği (3. oturum)
 
-Bekleyen (öncelik sırasız):
-- [ ] Kullanıcı tanımlı kategori ekleme
-- [ ] Kategoriye göre grafikler (pasta/çubuk)
-- [ ] DB yedekleme / dışa aktarma (CSV/JSON)
-- [ ] Kayıtlı veriden otomatik "beklenen giderler" eşleştirme/öneri
-- [ ] iOS derleme + uçbirim görünüm ayarları
+Tamamlanan (v0.4.0):
+- [x] Sabit Kayıtlar grupları **açılır/kapanır** (ExpansionTile) — kullanıcı isteği
+- [x] **Silmeyi geri al (undo)** — kayıt ve sabit kayıt için "Geri al" çubuğu
+- [x] **Karanlık tema** (DB `settings`, Genel Bakış ikonu)
+- [x] **Kayıt kopyalama (klonla)** — kayıt menüsünde "Kopyala"
+
+Bekleyen — yol haritası (öncelik önerisi sırasıyla):
+- [ ] v0.5.x — **Kategori bütçe/limitleri**: kategoriye aylık limit, ilerleme çubuğu, aşınca uyarı
+- [ ] v0.5.x — **Ortalama & karşılaştırma**: kategori analizinde ay ortalaması, önceki aya/geçen yıla göre % değişim
+- [ ] v0.5.x — **Arama + filtre**: kayıtlarda kategori/not/tutar aralığı arama & filtre
+- [ ] v0.6.x — **Yedekleme / dışa aktarma**: tüm veriyi dosya olarak dışa aktar (CSV/JSON) + geri yükle — veri kaybına karşı en kritik
+- [ ] Bekleyen eski: Kullanıcı tanımlı kategori, kategorili grafikler (pasta/çubuk), "beklenen giderler" önerisi, ana ekran widget'ı, iOS derleme

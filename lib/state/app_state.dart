@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart' show ConflictAlgorithm;
 
 import '../data/app_database.dart';
 import '../data/category_repository.dart';
@@ -32,9 +33,17 @@ class AppState extends ChangeNotifier {
   // --- Görünüm durumu ---
   DateTime _gorunenAy = DateTime(DateTime.now().year, DateTime.now().month);
   int _gorunenYil = DateTime.now().year;
+  String _temaAyar = 'light';
+  TransactionRecord? _sonSilinenKayit;
+  RecurringExpense? _sonSilinenSabit;
 
   DateTime get gorunenAy => _gorunenAy;
   int get gorunenYil => _gorunenYil;
+
+  ThemeMode get temaModu =>
+      _temaAyar == 'dark' ? ThemeMode.dark : ThemeMode.light;
+
+  bool get karanlikTema => _temaAyar == 'dark';
 
   // --- Veri ---
   List<Category> _kategoriListesi = [];
@@ -95,8 +104,55 @@ class AppState extends ChangeNotifier {
   // --- Başlangıç ---
   Future<void> init() async {
     await db.open();
+    await _ayarYukle();
     await bildirimler.init();
     await yenile();
+  }
+
+  Future<void> _ayarYukle() async {
+    final d = await db.database;
+    final rows = await d.query(
+      'settings',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: ['tema'],
+    );
+    if (rows.isNotEmpty) {
+      _temaAyar = rows.first['value'] as String;
+    }
+  }
+
+  Future<void> _ayarYaz(String anahtar, String deger) async {
+    final d = await db.database;
+    await d.insert(
+      'settings',
+      {'key': anahtar, 'value': deger},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Gece/gündüz temasını değiştirir (tercih veritabanında saklanır).
+  Future<void> temaDegistir(bool karanlik) async {
+    _temaAyar = karanlik ? 'dark' : 'light';
+    await _ayarYaz('tema', _temaAyar);
+    notifyListeners();
+  }
+
+  /// Son silinen kaydı veya sabit kaydı geri getirir (undo).
+  Future<bool> sonSilineniGeriAl() async {
+    final kayit = _sonSilinenKayit;
+    final sabit = _sonSilinenSabit;
+    if (kayit == null && sabit == null) return false;
+
+    if (kayit != null) {
+      await islemler.insert(kayit);
+      _sonSilinenKayit = null;
+    } else if (sabit != null) {
+      await tekrarlayanlar.insert(sabit);
+      _sonSilinenSabit = null;
+    }
+    await yenile();
+    return true;
   }
 
   /// Tüm veriyi yeniden yükler.
@@ -161,6 +217,7 @@ class AppState extends ChangeNotifier {
     required int categoryId,
     required DateTime date,
     String note = '',
+    int? recurringId,
   }) async {
     final kayit = TransactionRecord(
       type: type,
@@ -168,6 +225,7 @@ class AppState extends ChangeNotifier {
       categoryId: categoryId,
       date: _dateKey(date),
       note: note,
+      recurringId: recurringId,
       createdAt: DateTime.now().toIso8601String(),
     );
     await islemler.insert(kayit);
@@ -197,11 +255,13 @@ class AppState extends ChangeNotifier {
   Future<void> kayitSil(TransactionRecord kayit) async {
     final id = kayit.id;
     if (id == null) return;
+    _sonSilinenSabit = null;
+    _sonSilinenKayit = kayit;
     await islemler.delete(id);
     await _kayitSonrasiYenile();
   }
 
-  // --- Tekrarlayan sabit giderler ---
+  // --- Tekrarlayan sabit kayıtlar ---
   Future<void> tekrarlayanEkle({
     required String name,
     RecordType type = RecordType.gider,
@@ -234,17 +294,35 @@ class AppState extends ChangeNotifier {
     required int categoryId,
     bool notify = true,
   }) async {
+    final yeniTip = type ?? mevcut.type;
     await tekrarlayanlar.update(
       mevcut.copyWith(
         name: name,
-        type: type ?? mevcut.type,
+        type: yeniTip,
         amountKurus: amountKurus,
         dayOfMonth: dayOfMonth,
         categoryId: categoryId,
         notify: notify,
       ),
     );
-    await _tekrarlayanSonrasiYenile();
+
+    // Bu sabit kayıttan üretilmiş aylık kayıtları da güncelle (kategori/tutar/isim/tip).
+    final id = mevcut.id;
+    if (id != null) {
+      await islemler.esitleTekrarlayanKayitlari(
+        recurringId: id,
+        eskiTypeDb: mevcut.type.toDb,
+        eskiAmountKurus: mevcut.amountKurus,
+        eskiCategoryId: mevcut.categoryId,
+        eskiNote: mevcut.name,
+        yeniTypeDb: yeniTip.toDb,
+        yeniAmountKurus: amountKurus,
+        yeniCategoryId: categoryId,
+        yeniNote: name,
+      );
+    }
+
+    await yenile();
   }
 
   Future<void> tekrarlayanAktiflikDegistir(RecurringExpense kayit, bool aktif) async {
@@ -255,6 +333,8 @@ class AppState extends ChangeNotifier {
   Future<void> tekrarlayanSil(RecurringExpense kayit) async {
     final id = kayit.id;
     if (id == null) return;
+    _sonSilinenKayit = null;
+    _sonSilinenSabit = kayit;
     await tekrarlayanlar.delete(id);
     await _tekrarlayanSonrasiYenile();
   }
@@ -294,6 +374,7 @@ class AppState extends ChangeNotifier {
           categoryId: sabit.categoryId,
           date: _dateKey(DateTime(ay.year, ay.month, sabit.dayOfMonth)),
           note: sabit.name,
+          recurringId: sabit.id,
           createdAt: DateTime.now().toIso8601String(),
         ),
       );

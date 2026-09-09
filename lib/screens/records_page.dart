@@ -102,6 +102,7 @@ class _KayitSatiri extends StatelessWidget {
     final isaret = kayit.type == RecordType.gelir ? '+' : '-';
     final tarih = dayShortLabelFromKey(kayit.date);
     final altYazi = kayit.note.isNotEmpty ? '$tarih • ${kayit.note}' : tarih;
+    final messenger = ScaffoldMessenger.of(context);
 
     return Dismissible(
       key: ValueKey(kayit.id),
@@ -117,7 +118,10 @@ class _KayitSatiri extends StatelessWidget {
         baslik: 'Kayıt silinsin mi?',
         mesaj: '${kategori.name}: ${formatMoney(kayit.amountKurus)}',
       ),
-      onDismissed: (_) => state.kayitSil(kayit),
+      onDismissed: (_) {
+        state.kayitSil(kayit);
+        _geriAlGoster(messenger, state, 'Kayıt silindi');
+      },
       child: ListTile(
         onTap: () => showTransactionEditor(context, mevcut: kayit),
         leading: CategoryAvatar(category: kategori),
@@ -132,14 +136,76 @@ class _KayitSatiri extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: Text(
-          '$isaret${formatMoney(kayit.amountKurus)}',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(color: renk, fontWeight: FontWeight.w600),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$isaret${formatMoney(kayit.amountKurus)}',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: renk, fontWeight: FontWeight.w600),
+            ),
+            PopupMenuButton<_KayitIslem>(
+              tooltip: 'İşlemler',
+              onSelected: (islem) {
+                switch (islem) {
+                  case _KayitIslem.duzenle:
+                    showTransactionEditor(context, mevcut: kayit);
+                  case _KayitIslem.kopyala:
+                    showTransactionEditor(context, kopya: kayit);
+                  case _KayitIslem.sil:
+                    _sil(context);
+                }
+              },
+              itemBuilder: (ctx) => const [
+                PopupMenuItem(
+                  value: _KayitIslem.duzenle,
+                  child: Text('Düzenle'),
+                ),
+                PopupMenuItem(
+                  value: _KayitIslem.kopyala,
+                  child: Text('Kopyala'),
+                ),
+                PopupMenuItem(value: _KayitIslem.sil, child: Text('Sil')),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Future<void> _sil(BuildContext context) async {
+    final onay = await onayIste(
+      context,
+      baslik: 'Kayıt silinsin mi?',
+      mesaj: '${formatMoney(kayit.amountKurus)} tutarındaki kayıt',
+    );
+    if (!onay || !context.mounted) return;
+    final appState = context.read<AppState>();
+    await appState.kayitSil(kayit);
+    if (!context.mounted) return;
+    _geriAlGoster(ScaffoldMessenger.of(context), appState, 'Kayıt silindi');
+  }
+
+  void _geriAlGoster(
+    ScaffoldMessengerState messenger,
+    AppState appState,
+    String metin,
+  ) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(metin),
+          action: SnackBarAction(
+            label: 'Geri al',
+            onPressed: () => appState.sonSilineniGeriAl(),
+          ),
+        ),
+      );
+  }
 }
+
+enum _KayitIslem { duzenle, kopyala, sil }

@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// Uygulama teması (Material 3, teal ton).
-ThemeData buildTheme() {
-  final colorScheme = ColorScheme.fromSeed(seedColor: const Color(0xFF00897B));
+/// Açık (gündüz) tema — Material 3, teal ton.
+ThemeData buildTheme() => _build(ThemeMode.light);
+
+/// Karanlık (gece) tema.
+ThemeData buildDarkTheme() => _build(ThemeMode.dark);
+
+ThemeData _build(ThemeMode mod) {
+  final karanlik = mod == ThemeMode.dark;
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: const Color(0xFF00897B),
+    brightness: karanlik ? Brightness.dark : Brightness.light,
+  );
   return ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,

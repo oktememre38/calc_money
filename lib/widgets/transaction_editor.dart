@@ -13,11 +13,13 @@ import 'category_visual.dart';
 
 /// Gelir/gider kaydı ekleme veya düzenleme alt sayfası (bottom sheet).
 ///
-/// [mevcut] verilirse düzenleme, verilmezse yeni kayıt açılır.
-/// [kaynak] (tekrarlayan gider) verilirse alanlar buna göre ön doldurulur.
+/// [mevcut] verilirse düzenleme, [kopya] verilirse yeni kayıt (kopyalanan
+/// kaydın değerleriyle ön doldurulur), [kaynak] (tekrarlayan sabit kayıt)
+/// verilirse alanlar ona göre ön doldurulur.
 Future<void> showTransactionEditor(
   BuildContext context, {
   TransactionRecord? mevcut,
+  TransactionRecord? kopya,
   RecurringExpense? kaynak,
 }) {
   return showModalBottomSheet<void>(
@@ -30,16 +32,17 @@ Future<void> showTransactionEditor(
     ),
     builder: (ctx) => Padding(
       padding: MediaQuery.viewInsetsOf(ctx),
-      child: TransactionEditor(mevcut: mevcut, kaynak: kaynak),
+      child: TransactionEditor(mevcut: mevcut, kopya: kopya, kaynak: kaynak),
     ),
   );
 }
 
 class TransactionEditor extends StatefulWidget {
   final TransactionRecord? mevcut;
+  final TransactionRecord? kopya;
   final RecurringExpense? kaynak;
 
-  const TransactionEditor({super.key, this.mevcut, this.kaynak});
+  const TransactionEditor({super.key, this.mevcut, this.kopya, this.kaynak});
 
   @override
   State<TransactionEditor> createState() => _TransactionEditorState();
@@ -59,15 +62,19 @@ class _TransactionEditorState extends State<TransactionEditor> {
   void initState() {
     super.initState();
     final m = widget.mevcut;
+    final kopya = widget.kopya;
     final k = widget.kaynak;
-    _tip = m?.type ?? k?.type ?? RecordType.gider;
-    final ilkTutar = m?.amountKurus ?? k?.amountKurus ?? 0;
+    final kaynakKayit = m ?? kopya;
+    _tip = kaynakKayit?.type ?? k?.type ?? RecordType.gider;
+    final ilkTutar = kaynakKayit?.amountKurus ?? k?.amountKurus ?? 0;
     _tutar = TextEditingController(
       text: ilkTutar > 0 ? kurusToGirdi(ilkTutar) : '',
     );
-    _not = TextEditingController(text: m?.note ?? k?.name ?? '');
+    _not = TextEditingController(
+      text: m?.note ?? kopya?.note ?? k?.name ?? '',
+    );
     _tarih = m != null ? DateTime.parse(m.date) : DateTime.now();
-    _kategoriId = m?.categoryId ?? k?.categoryId;
+    _kategoriId = kaynakKayit?.categoryId ?? k?.categoryId;
   }
 
   @override
@@ -237,6 +244,7 @@ class _TransactionEditorState extends State<TransactionEditor> {
         categoryId: kategori.id,
         date: _tarih,
         note: _not.text.trim(),
+        recurringId: widget.kaynak?.id ?? widget.kopya?.recurringId,
       );
     }
     if (mounted) Navigator.pop(context);

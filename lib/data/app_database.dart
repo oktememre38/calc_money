@@ -15,7 +15,7 @@ class AppDatabase {
     final dir = await getDatabasesPath();
     final db = await openDatabase(
       p.join(dir, 'calc_money.db'),
-      version: 2,
+      version: 4,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -30,6 +30,21 @@ class AppDatabase {
       await db.execute(
         'ALTER TABLE recurring_expenses ADD COLUMN type INTEGER NOT NULL DEFAULT 1',
       );
+    }
+    if (eski < 3) {
+      // v3: aylık kayıtlar hangi sabit kayıttan oluşturulduysa ona bağlanır.
+      await db.execute(
+        'ALTER TABLE transactions ADD COLUMN recurring_id INTEGER',
+      );
+    }
+    if (eski < 4) {
+      // v4: basit anahtar/değer ayar tablosu (örn. tema).
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS settings(
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
     }
   }
 
@@ -51,6 +66,7 @@ class AppDatabase {
         category_id INTEGER NOT NULL REFERENCES categories(id),
         date TEXT NOT NULL,
         note TEXT NOT NULL DEFAULT '',
+        recurring_id INTEGER,
         created_at TEXT NOT NULL
       )
     ''');
@@ -68,11 +84,16 @@ class AppDatabase {
         created_at TEXT NOT NULL
       )
     ''');
+    await db.execute('''
+      CREATE TABLE settings(
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    ''');
     await _seedCategories(db);
   }
 
-  Future<void> _seedCategories(Database db) async {
-    final batch = db.batch();
+  Future<void> _seedCategories(Database db) async {    final batch = db.batch();
     for (final seed in _gelirTohum) {
       batch.insert('categories', {...seed, 'type': 0});
     }

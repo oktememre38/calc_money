@@ -58,6 +58,7 @@ class RecurringPage extends StatelessWidget {
     AppState state,
     List<RecurringExpense> kayitlar,
   ) {
+    final tema = Theme.of(context);
     final gruplar = <int, List<RecurringExpense>>{};
     for (final kayit in kayitlar) {
       gruplar.putIfAbsent(kayit.categoryId, () => []).add(kayit);
@@ -77,15 +78,36 @@ class RecurringPage extends StatelessWidget {
     }
 
     final satirlar = <Widget>[];
+    var ilk = true;
     for (final kategori in kategoriler) {
       final liste = gruplar[kategori.id]!;
-      satirlar.add(_KategoriBasi(
-        kategori: kategori,
-        kayitlar: liste,
-      ));
-      for (final kayit in liste) {
-        satirlar.add(_SabitKayitSatiri(kayit: kayit));
-      }
+      final aktifToplam = liste.fold<int>(
+        0,
+        (toplam, k) => k.active ? toplam + k.amountKurus : toplam,
+      );
+      final altYazi = aktifToplam > 0
+          ? '${liste.length} kayıt • ${formatMoney(aktifToplam)}'
+          : '${liste.length} kayıt';
+
+      satirlar.add(
+        ExpansionTile(
+          key: PageStorageKey('grup-${kategori.id}'),
+          initiallyExpanded: ilk,
+          leading: CategoryAvatar(category: kategori, boyut: 34),
+          title: Text(
+            kategori.name,
+            style: tema.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(altYazi),
+          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final kayit in liste) _SabitKayitSatiri(kayit: kayit),
+          ],
+        ),
+      );
+      ilk = false;
     }
     return satirlar;
   }
@@ -170,49 +192,6 @@ class _OzetSatir extends StatelessWidget {
   }
 }
 
-class _KategoriBasi extends StatelessWidget {
-  final Category kategori;
-  final List<RecurringExpense> kayitlar;
-
-  const _KategoriBasi({required this.kategori, required this.kayitlar});
-
-  @override
-  Widget build(BuildContext context) {
-    final aktifToplam = kayitlar.fold<int>(
-      0,
-      (toplam, k) => k.active ? toplam + k.amountKurus : toplam,
-    );
-    final renk = kategori.isGider ? giderRengi(context) : gelirRengi(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-      child: Row(
-        children: [
-          CategoryAvatar(category: kategori, boyut: 30),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              kategori.name,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          if (aktifToplam > 0)
-            Text(
-              formatMoney(aktifToplam),
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: renk, fontWeight: FontWeight.w600),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 enum _Islem { kayitEkle, duzenle, aktiflik, sil }
 
 class _SabitKayitSatiri extends StatelessWidget {
@@ -228,6 +207,7 @@ class _SabitKayitSatiri extends StatelessWidget {
     final tutarRenk = kategori.isGider
         ? giderRengi(context)
         : gelirRengi(context);
+    final messenger = ScaffoldMessenger.of(context);
 
     final bildirimMetni = kayit.notify ? 'hatırlatma açık' : 'hatırlatma kapalı';
     final altYazi =
@@ -247,7 +227,10 @@ class _SabitKayitSatiri extends StatelessWidget {
         baslik: 'Sabit kayıt silinsin mi?',
         mesaj: '${kayit.name}: ${formatMoney(kayit.amountKurus)}',
       ),
-      onDismissed: (_) => state.tekrarlayanSil(kayit),
+      onDismissed: (_) {
+        state.tekrarlayanSil(kayit);
+        _geriAlGoster(messenger, state, 'Sabit kayıt silindi');
+      },
       child: Card(
         margin: const EdgeInsets.only(bottom: 6),
         child: ListTile(
@@ -335,5 +318,29 @@ class _SabitKayitSatiri extends StatelessWidget {
     if (!onay || !context.mounted) return;
     final state = context.read<AppState>();
     await state.tekrarlayanSil(kayit);
+    if (!context.mounted) return;
+    _geriAlGoster(
+      ScaffoldMessenger.of(context),
+      state,
+      'Sabit kayıt silindi',
+    );
+  }
+
+  void _geriAlGoster(
+    ScaffoldMessengerState messenger,
+    AppState appState,
+    String metin,
+  ) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(metin),
+          action: SnackBarAction(
+            label: 'Geri al',
+            onPressed: () => appState.sonSilineniGeriAl(),
+          ),
+        ),
+      );
   }
 }
