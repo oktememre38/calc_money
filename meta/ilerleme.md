@@ -3,6 +3,16 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (8. oturum) — v0.5.0: arama+filtre, ortalama & karşılaştırma
+- **Arama + filtre (Kayıtlar):** Sayfanın üstünde arama kutusu (not/kategori adına göre)
+  + ay içinde kullanılan kategorilerin tek seçimli filtre çipleri ("Tümü" + kategoriler).
+  Filtre açıkken "X / N kayıt gösteriliyor" + "Filtreyi temizle". Sayfa Stateful oldu,
+  `screens/records_page.dart` baştan yazıldı.
+- **Ortalama & karşılaştırma (Kategori Analizi):** Kategori ay-detayında üst kart artık
+  şunları gösteriyor: **Aylık ortalama** (kayıtlı ay başına), **Geçen yıl toplamı + % değişim**,
+  **Son iki kayıtlı ay arası % değişim**. `screens/category_analysis.dart` (geçen yıl sorgusu).
+- Sürüm: `0.5.0+7`. `flutter analyze` temiz, `flutter test` 12/12, `flutter build apk` başarılı (53,3 MB).
+
 ## 2026-09-09 (7. oturum) — v0.4.0: karanlık tema, geri al, açılır/kapanır gruplar, kopyalama
 Bu sürüm aynı zamanda v0.3.2'nin iki düzeltmesini de içerir (sabit→aylık güncelleme, analizde yıl okları).
 - **Karanlık tema:** Açık/gece tema. Tercih DB'deki yeni `settings` tablosunda saklanır (DB v4).

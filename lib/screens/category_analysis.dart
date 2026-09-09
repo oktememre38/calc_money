@@ -120,6 +120,18 @@ class _CategoryAnalysisPageState extends State<CategoryAnalysisPage> {
 int _tipTutari(Category kategori, Aggregate agg) =>
     kategori.isGider ? agg.expense : agg.income;
 
+/// (eski -> yeni) tutar değişimini yüzde olarak hesaplar.
+int _degisimYuzde(int eski, int yeni) {
+  if (eski <= 0) return yeni > 0 ? 100 : 0;
+  return (((yeni - eski) / eski) * 100).round();
+}
+
+/// Yüzde değişimini okunur metne çevirir.
+String _yuzdeMetni(int degisim) {
+  if (degisim == 0) return 'değişim yok';
+  return degisim > 0 ? '+%$degisim artış' : '-%${-degisim} azalış';
+}
+
 class _KategoriSatir extends StatelessWidget {
   final Category kategori;
   final int toplam;
@@ -192,6 +204,7 @@ class CategoryMonthPage extends StatefulWidget {
 class _CategoryMonthPageState extends State<CategoryMonthPage> {
   bool _yukleniyor = true;
   List<MonthlySummary> _aylar = [];
+  List<MonthlySummary> _oncekiYil = [];
 
   @override
   void initState() {
@@ -201,10 +214,18 @@ class _CategoryMonthPageState extends State<CategoryMonthPage> {
 
   Future<void> _yukle() async {
     final repo = context.read<AppState>().islemler;
-    final aylar = await repo.kategoriYillikAylik(widget.yil, widget.kategori.id);
+    final aylar =
+        await repo.kategoriYillikAylik(widget.yil, widget.kategori.id);
+    // Geçen yılla karşılaştırma için (yıl başlangıçtan eski olamaz).
+    List<MonthlySummary> oncekiYil = [];
+    if (widget.yil > 2000) {
+      oncekiYil =
+          await repo.kategoriYillikAylik(widget.yil - 1, widget.kategori.id);
+    }
     if (!mounted) return;
     setState(() {
       _aylar = aylar;
+      _oncekiYil = oncekiYil;
       _yukleniyor = false;
     });
   }
@@ -222,6 +243,34 @@ class _CategoryMonthPageState extends State<CategoryMonthPage> {
         degerler.fold<int>(0, (max, d) => d > max ? d : max);
     final yilToplami =
         degerler.fold<int>(0, (toplam, d) => toplam + d);
+
+    // İstatistikler
+    final oncekiToplam = _oncekiYil.fold<int>(
+      0,
+      (toplam, ozet) => toplam + _tipTutari(kategori, ozet.aggregate),
+    );
+    final yilDegisim = _degisimYuzde(oncekiToplam, yilToplami);
+
+    final kayitliAy = [
+      for (var ay = 1; ay <= 12; ay++)
+        if (degerler[ay - 1] > 0) ay,
+    ];
+    final ortalama = kayitliAy.isEmpty
+        ? 0
+        : yilToplami ~/ kayitliAy.length;
+
+    String sonIkiAyMetin = 'yeterli veri yok';
+    if (kayitliAy.length >= 2) {
+      final sonAy = kayitliAy.last;
+      final oncekiAy = kayitliAy[kayitliAy.length - 2];
+      final degisim = _degisimYuzde(
+        degerler[oncekiAy - 1],
+        degerler[sonAy - 1],
+      );
+      sonIkiAyMetin = '${monthName(oncekiAy)} → ${monthName(sonAy)}: '
+          '${_yuzdeMetni(degisim)}';
+    }
+
     final buAy = DateTime.now().year == widget.yil
         ? DateTime.now().month
         : 0;
@@ -268,6 +317,29 @@ class _CategoryMonthPageState extends State<CategoryMonthPage> {
                           ],
                         ),
                         const SizedBox(height: 12),
+                        const Divider(height: 1),
+                        const SizedBox(height: 8),
+                        _IstatistikSatir(
+                          label: 'Aylık ortalama',
+                          deger: formatMoney(ortalama),
+                          ek: kayitliAy.isEmpty
+                              ? null
+                              : '${kayitliAy.length} ay kayıt',
+                        ),
+                        _IstatistikSatir(
+                          label: 'Geçen yıl',
+                          deger: formatMoney(oncekiToplam),
+                          ek: oncekiToplam > 0
+                              ? _yuzdeMetni(yilDegisim)
+                              : 'kayıt yok',
+                        ),
+                        _IstatistikSatir(
+                          label: 'Son iki ay',
+                          deger: sonIkiAyMetin,
+                        ),
+                        const SizedBox(height: 8),
+                        const Divider(height: 1),
+                        const SizedBox(height: 8),
                         Text(
                           'Aylık değişim — tutarlar kayıtlarına göre:',
                           style: tema.textTheme.bodySmall?.copyWith(
@@ -350,6 +422,54 @@ class _AyTutariSatir extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IstatistikSatir extends StatelessWidget {
+  final String label;
+  final String deger;
+  final String? ek;
+
+  const _IstatistikSatir({
+    required this.label,
+    required this.deger,
+    this.ek,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final ikincil = tema.colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: tema.textTheme.bodyMedium?.copyWith(
+                color: ikincil,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              deger,
+              style: tema.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (ek != null)
+            Text(
+              ek!,
+              style: tema.textTheme.bodySmall?.copyWith(color: ikincil),
+            ),
         ],
       ),
     );

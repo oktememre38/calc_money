@@ -1,24 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/category.dart';
 import '../models/record_type.dart';
 import '../models/transaction_record.dart';
 import '../state/app_state.dart';
-import 'category_analysis.dart';
 import '../utils/dates.dart';
 import '../utils/money.dart';
 import '../widgets/category_visual.dart';
 import '../widgets/common.dart';
 import '../widgets/summary_bar.dart';
 import '../widgets/transaction_editor.dart';
+import 'category_analysis.dart';
 
-/// Kayıtlar: seçili ayın gelir/gider listesi ve özeti.
-class RecordsPage extends StatelessWidget {
+/// Kayıtlar: seçili ayın gelir/gider listesi, özet, arama ve kategori filtresi.
+class RecordsPage extends StatefulWidget {
   const RecordsPage({super.key});
+
+  @override
+  State<RecordsPage> createState() => _RecordsPageState();
+}
+
+class _RecordsPageState extends State<RecordsPage> {
+  String _arama = '';
+  int? _kategoriId;
+
+  bool get _filtreVar => _kategoriId != null || _arama.trim().isNotEmpty;
+
+  List<TransactionRecord> _filtrele(
+    AppState state,
+    List<TransactionRecord> kayitlar,
+  ) {
+    final q = _arama.trim().toLowerCase();
+    return kayitlar.where((kayit) {
+      if (_kategoriId != null && kayit.categoryId != _kategoriId) return false;
+      if (q.isEmpty) return true;
+      final kategoriAdi = state.kategoriGetir(kayit.categoryId).name.toLowerCase();
+      return kategoriAdi.contains(q) || kayit.note.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  /// Ay içinde kaydı olan kategoriler (listedeki sıraya göre).
+  List<Category> _ayKategorileri(AppState state) {
+    final kullanilan = <int>{};
+    for (final kayit in state.ayKayitlari) {
+      kullanilan.add(kayit.categoryId);
+    }
+    return [
+      for (final kategori in state.kategoriListesi)
+        if (kullanilan.contains(kategori.id)) kategori,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final filtreli = _filtrele(state, state.ayKayitlari);
+    final ayKategorileri = _ayKategorileri(state);
 
     return Scaffold(
       appBar: AppBar(
@@ -53,9 +91,45 @@ class RecordsPage extends StatelessWidget {
             onBuguneDon: state.buAyaDon,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: _AramaKutusu(
+              deger: _arama,
+              onDegis: (v) => setState(() => _arama = v),
+            ),
+          ),
+          if (ayKategorileri.isNotEmpty)
+            _KategoriFiltreleri(
+              kategoriler: ayKategorileri,
+              seciliId: _kategoriId,
+              onSec: (id) => setState(() => _kategoriId = id),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: AylikOzetBar(ozet: state.ayOzet),
           ),
+          if (_filtreVar)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${filtreli.length} / ${state.ayKayitlari.length} kayıt gösteriliyor',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _arama = '';
+                      _kategoriId = null;
+                    }),
+                    child: const Text('Filtreyi temizle'),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 4),
           Expanded(
             child: state.ayKayitlari.isEmpty
@@ -64,8 +138,91 @@ class RecordsPage extends StatelessWidget {
                     mesaj:
                         'Bu ay için henüz kayıt yok.\nSağ alttaki + butonu ile gelir veya gider ekleyebilirsin.',
                   )
-                : _KayitListesi(state: state),
+                : filtreli.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.search_off,
+                        mesaj: 'Filtreye uygun kayıt yok.',
+                      )
+                    : _KayitListesi(state: state, kayitlar: filtreli),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AramaKutusu extends StatelessWidget {
+  final String deger;
+  final ValueChanged<String> onDegis;
+
+  const _AramaKutusu({required this.deger, required this.onDegis});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      onChanged: onDegis,
+      controller: null,
+      decoration: InputDecoration(
+        hintText: 'Ara: not veya kategori',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: deger.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => onDegis(''),
+              ),
+        isDense: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+    );
+  }
+}
+
+class _KategoriFiltreleri extends StatelessWidget {
+  final List<Category> kategoriler;
+  final int? seciliId;
+  final ValueChanged<int?> onSec;
+
+  const _KategoriFiltreleri({
+    required this.kategoriler,
+    required this.seciliId,
+    required this.onSec,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: const Text('Tümü'),
+              selected: seciliId == null,
+              onSelected: (_) => onSec(null),
+            ),
+          ),
+          for (final kategori in kategoriler)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                avatar: Icon(
+                  kategoriIkon(kategori),
+                  size: 16,
+                  color: kategoriRengi(kategori),
+                ),
+                label: Text(kategori.name),
+                selected: kategori.id == seciliId,
+                onSelected: (_) => onSec(kategori.id),
+              ),
+            ),
         ],
       ),
     );
@@ -74,15 +231,16 @@ class RecordsPage extends StatelessWidget {
 
 class _KayitListesi extends StatelessWidget {
   final AppState state;
+  final List<TransactionRecord> kayitlar;
 
-  const _KayitListesi({required this.state});
+  const _KayitListesi({required this.state, required this.kayitlar});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.only(bottom: 88),
       children: [
-        for (final kayit in state.ayKayitlari)
+        for (final kayit in kayitlar)
           _KayitSatiri(state: state, kayit: kayit),
       ],
     );
@@ -116,7 +274,7 @@ class _KayitSatiri extends StatelessWidget {
       confirmDismiss: (_) => onayIste(
         context,
         baslik: 'Kayıt silinsin mi?',
-        mesaj: '${kategori.name}: ${formatMoney(kayit.amountKurus)}',
+        mesaj: '${formatMoney(kayit.amountKurus)} tutarındaki kayıt',
       ),
       onDismissed: (_) {
         state.kayitSil(kayit);
