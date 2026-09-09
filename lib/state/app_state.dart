@@ -197,6 +197,18 @@ class AppState extends ChangeNotifier {
     await yenile();
   }
 
+  /// Veritabanını paylaşılabilir bir .db kopyasına çıkarır (yedek).
+  Future<String> yedekOlustur() => db.yedekDisariKopyala();
+
+  /// Seçilen bir .db yedek dosyasından veriyi geri yükler.
+  Future<void> yedekGeriYukle(String kaynakYol) async {
+    await db.yedektenGeriYukle(kaynakYol);
+    await _ayarYukle();
+    _gorunenAy = suDonemAy;
+    _gorunenYil = _gorunenAy.year;
+    await yenile();
+  }
+
   /// Son silinen kaydı veya sabit kaydı geri getirir (undo).
   Future<bool> sonSilineniGeriAl() async {
     final kayit = _sonSilinenKayit;

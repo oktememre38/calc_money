@@ -35,6 +35,9 @@ kaydeder. Uygulama:
   yeniden hesaplanır.
 - **Ön tanımlı kategoriler:** Tohum seti zamanla genişleyebilir (yeni kategoriler DB göçüyle
   eklenir, mevcut kullanıcı verisi korunur). Kullanıcı tanımlı kategori hâlâ yol haritasında.
+- **Yedekleme:** Veri yedeği, tüm veritabanının tek `.db` dosyası olarak dışa/içe aktarılmasıdır
+  (Ayarlar → Veri yedeği; share_plus ile paylaş, file_picker ile geri yükle). Yedek içe aktarılırken
+  SQLite başlık imzası doğrulanır; mevcut verinin üzerine yazar. Şimdilik CSV/JSON yok.
 
 ## Veri modeli
 - `categories(id, name, type[0=gelir,1=gider], icon, color, parent_id)`
@@ -100,8 +103,10 @@ Tamamlanan (v0.7.0):
       kadar olan kayıtlar o ayın, sonrası sonraki ayın dönemine işlenir.
       `transactions.donem` etiketi (DB v6) + sorgular dönem etiketine göre; kesim değişince
       tüm kayıtlar yeniden hesaplanır.
+- [x] **Veri yedeği (dışa/içe aktarma .db):** Ayarlar → "Veri yedeği" ile tek `.db` dosyası
+      paylaşılabilir (Drive/e-posta) ve aynı dosyadan geri yüklenebilir (SQLite doğrulamalı).
+      Yeni paketler: `share_plus`, `file_picker`.
 
 Bekleyen — yol haritası (öncelik önerisi sırasıyla):
 - [ ] v0.6.x — **Kategori bütçe/limitleri**: kategoriye aylık limit, ilerleme çubuğu, aşınca uyarı
-- [ ] v0.6.x — **Yedekleme / dışa aktarma**: tüm veriyi dosya olarak dışa aktar (CSV/JSON) + geri yükle — veri kaybına karşı en kritik
 - [ ] Bekleyen eski: Kullanıcı tanımlı kategori, kategorili grafikler (pasta/çubuk), "beklenen giderler" önerisi, ana ekran widget'ı, iOS derleme

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -5,10 +7,77 @@ import 'package:sqflite/sqflite.dart';
 class AppDatabase {
   Database? _db;
 
+  static const _dbAdi = 'calc_money.db';
+
   Future<Database> get database async => _db ??= await _open();
 
   Future<void> open() async {
     await database;
+  }
+
+  Future<String> _veritabaniYolu() async {
+    final dir = await getDatabasesPath();
+    return p.join(dir, _dbAdi);
+  }
+
+  /// Veritabanı dosyasının paylaşılabilir bir kopyasını oluşturur; yolunu döner.
+  Future<String> yedekDisariKopyala() async {
+    final mevcut = _db;
+    if (mevcut != null) {
+      try {
+        // Bekleyen WAL kayıtlarını ana dosyaya birleştir.
+        await mevcut.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+      } catch (_) {}
+    }
+    final kaynak = await _veritabaniYolu();
+    final hedef = p.join(
+      Directory.systemTemp.path,
+      'calcmoney-yedek-${DateTime.now().millisecondsSinceEpoch}.db',
+    );
+    await File(kaynak).copy(hedef);
+    return hedef;
+  }
+
+  /// Seçilen bir yedek (.db) dosyasından veritabanını geri yükler.
+  ///
+  /// Dosya geçerli bir SQLite veritabanı değilse [ArgumentError] fırlatır.
+  Future<void> yedektenGeriYukle(String kaynakYol) async {
+    final kaynak = File(kaynakYol);
+    if (!kaynak.existsSync()) {
+      throw ArgumentError('Yedek dosyası bulunamadı.');
+    }
+
+    // SQLite başlık imzasını doğrula ("SQLite format 3" + NUL).
+    final raf = await kaynak.open();
+    final baslik = await raf.read(16);
+    await raf.close();
+    const imza = [0x53, 0x51, 0x4C, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6F,
+      0x72, 0x6D, 0x61, 0x74, 0x20, 0x33, 0x00];
+    var gecerli = baslik.length == imza.length;
+    if (gecerli) {
+      for (var i = 0; i < imza.length; i++) {
+        if (baslik[i] != imza[i]) {
+          gecerli = false;
+          break;
+        }
+      }
+    }
+    if (!gecerli) {
+      throw ArgumentError('Bu dosya geçerli bir CalcMoney yedeği değil.');
+    }
+
+    final hedef = await _veritabaniYolu();
+    final mevcut = _db;
+    if (mevcut != null) {
+      await mevcut.close();
+      _db = null;
+    }
+    for (final ek in ['', '-wal', '-shm']) {
+      final dosya = File('$hedef$ek');
+      if (dosya.existsSync()) await dosya.delete();
+    }
+    await kaynak.copy(hedef);
+    await open();
   }
 
   Future<Database> _open() async {

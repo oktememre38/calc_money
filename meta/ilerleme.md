@@ -21,15 +21,28 @@ Bu sürüm, kullanıcının istediği üç işi birden içerir (tek sürüm kara
   sayfalarındaki "bu ay" vurgusu da dönem etiketini kullanır.
 - **Ek düzeltme:** `screens/dagilim.dart` içinde bozuk karakterle (mojibake) kayıtlı 3 metin
   (başlık/yorum/boş durum) düzeltildi.
+- **Veri yedeği (.db):** Ayarlar → "Veri yedeği" — tüm veritabanı tek `.db` dosyası olarak
+  paylaşılıp (share_plus) geri yüklenebilir (file_picker + SQLite başlık doğrulaması).
+  Yeni paketler: `share_plus`, `file_picker`. `app_database.dart` (kopyala/geri yükle),
+  `app_state.dart` (`yedekOlustur`, `yedekGeriYukle`), `ayarlar_page.dart`.
+- **Kalıcı release imzası:** Artık APK'lar bilgisayara özel debug anahtarıyla değil, kalıcı bir
+  keystore ile imzalanıyor (`android/key.properties` — git'e girmez; dosya
+  `C:\Users\User\keystores\calcmoney-release.jks`, PAROLAYI YEDEKLE). `build.gradle.kts` anahtarı
+  okuyamazsa debug imzaya düşer. Çift PC kullanımı için aynı keystore dosyasının iki makinede de
+  aynı yolu göstermesi gerekir. Bu sürümden itibaren telefonda ilk kurulum eski (debug) imzalı
+  sürümle çakışır → eski uygulama SİLİNİP kurulur (eski veriye erişim yoksa kaybolur; sonrasında
+  yedek alma/geri yükleme ile korunur).
 - Dosyalar: `app_database.dart` (v6), `models/transaction_record.dart` (donem),
-  `data/transaction_repository.dart`, `state/app_state.dart` (kesim ayarı + dönem),
+  `data/transaction_repository.dart`, `state/app_state.dart` (kesim ayarı + dönem + yedek),
   `utils/dates.dart` (`donemEtiketi`), `widgets/category_visual.dart`, `screens/recurring_page.dart`,
-  `screens/ayarlar_page.dart` (yeni), `screens/overview_page.dart` (dişli), `annual_page.dart`,
-  `category_analysis.dart`, `dagilim.dart`, `pubspec.yaml` → `0.7.0+10`.
+  `screens/ayarlar_page.dart` (yeni: kesim + yedek), `screens/overview_page.dart` (dişli),
+  `annual_page.dart`, `category_analysis.dart`, `dagilim.dart`, `android/app/build.gradle.kts`
+  (release imza), `pubspec.yaml`/`pubspec.lock` → `0.7.0+10` (+share_plus, +file_picker).
 - Sürüm: `0.7.0+10`. `flutter analyze` temiz, `flutter test` 16/16, `flutter build apk --release`
-  başarılı (53,5 MB).
-- Not: Telefonda KALDIRMADAN üzerine güncelle (DB v6 göçü otomatik çalışır). Kurulumdan sonra
-  Ayarlar'dan kesim gününü dene; veriler yeni döneme göre yeniden gruplanır.
+  başarılı (54,4 MB).
+- Not: Telefonda KALDIRIP yeni APK'yı KUR (ilk seferlik imza geçişi; veriler eski anahtara
+  erişim yoksa kaybolur). Kurduktan sonra Ayarlar → "Yedek al" ile ilk yedeğini hemen al.
+  GitHub'daki v0.7.0 etiketi/eski APK hatalı imzalıydı; doğru commit'e taşınıp yeni APK yüklenecek.
 
 ## 2026-09-09 (11. oturum) — Yeni makinede geliştirme ortamı kuruldu
 Reponun yeni klonlandığı bu makinede sıfırdan kurulum yapıldı (önceden Flutter/Java/Android SDK yoktu):
