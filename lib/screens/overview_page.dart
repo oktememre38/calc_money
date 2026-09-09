@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'category_analysis.dart';
+import 'dagilim.dart';
 import '../state/app_state.dart';
 import '../utils/dates.dart';
 import '../utils/money.dart';
 import '../widgets/category_visual.dart';
 import '../widgets/common.dart';
-import '../widgets/distribution_chart.dart';
 import '../widgets/summary_bar.dart';
 
 /// Genel bakış: seçili ay özeti, ayın gelir/gider dağılımı, sabit kayıtlar.
@@ -60,6 +60,7 @@ class OverviewPage extends StatelessWidget {
             onOnceki: state.oncekiAy,
             onSonraki: state.sonrakiAy,
             onBuguneDon: state.buAyaDon,
+            onTitleTap: () => _farkliAySec(context, state),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -166,4 +167,14 @@ class _SabitOzetSatir extends StatelessWidget {
       ],
     );
   }
+}
+
+Future<void> _farkliAySec(BuildContext context, AppState state) async {
+  final secim = await aySeciciGoster(
+    context,
+    year: state.gorunenAy.year,
+    month: state.gorunenAy.month,
+  );
+  if (secim == null) return;
+  state.ayaGit(secim.year, secim.month);
 }

@@ -89,6 +89,7 @@ class _RecordsPageState extends State<RecordsPage> {
             onOnceki: state.oncekiAy,
             onSonraki: state.sonrakiAy,
             onBuguneDon: state.buAyaDon,
+            onTitleTap: () => _farkliAySec(context, state),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -367,3 +368,13 @@ class _KayitSatiri extends StatelessWidget {
 }
 
 enum _KayitIslem { duzenle, kopyala, sil }
+
+Future<void> _farkliAySec(BuildContext context, AppState state) async {
+  final secim = await aySeciciGoster(
+    context,
+    year: state.gorunenAy.year,
+    month: state.gorunenAy.month,
+  );
+  if (secim == null) return;
+  state.ayaGit(secim.year, secim.month);
+}

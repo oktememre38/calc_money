@@ -75,6 +75,9 @@ class MonthSelector extends StatelessWidget {
   final VoidCallback onSonraki;
   final VoidCallback? onBuguneDon;
 
+  /// Başlığa (örn. "Eylül 2026") dokununca çalışır; boşsa [onBuguneDon] kullanılır.
+  final VoidCallback? onTitleTap;
+
   const MonthSelector({
     super.key,
     required this.year,
@@ -82,6 +85,7 @@ class MonthSelector extends StatelessWidget {
     required this.onOnceki,
     required this.onSonraki,
     this.onBuguneDon,
+    this.onTitleTap,
   });
 
   @override
@@ -95,7 +99,7 @@ class MonthSelector extends StatelessWidget {
         ),
         Expanded(
           child: InkWell(
-            onTap: onBuguneDon,
+            onTap: onTitleTap ?? onBuguneDon,
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -118,6 +122,23 @@ class MonthSelector extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Takvim yardımıyla kullanıcının bir ay seçmesini sağlar.
+/// Seçilen günün yıl/ay bilgisi döner; vazgeçilirse null.
+Future<DateTime?> aySeciciGoster(
+  BuildContext context, {
+  required int year,
+  required int month,
+}) {
+  return showDatePicker(
+    context: context,
+    initialDate: DateTime(year, month, 1),
+    firstDate: DateTime(2000),
+    lastDate: DateTime(2100),
+    helpText: 'Bir gün seç — ait olduğu ay açılır',
+    cancelText: 'Vazgeç',
+  );
 }
 
 /// Yıl seçici: başlık + önceki/sonraki okları.

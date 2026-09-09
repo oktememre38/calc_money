@@ -3,6 +3,15 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (10. oturum) — v0.6.1: dağılım detayı + hızlı ay atlama
+- **Donut detayı:** Genel Bakış'ta dağılım kartına dokununca **detay ekranı** açılıyor
+  (Gider/Gelir geçişli; her kategori için çubuk + tutar + %; toplam). Dosya
+  `screens/dagilim.dart` (yeni; `DagilimKarti` + `DagilimDetayPage`).
+- **Ay atlama:** "Eylül 2026" başlığına dokununca takvim açılır, seçilen günün ayına atlanır
+  (Genel Bakış ve Kayıtlar). `widgets/common.dart` (`aySeciciGoster`, `MonthSelector.onTitleTap`).
+- Not: Ay dağılım verisini toplayan sorgu `ayKategoriDagilimi` `data/transaction_repository.dart`'ta.
+- Sürüm: `0.6.1+9`. `flutter analyze` temiz, `flutter test` 12/12, `flutter build apk` başarılı (53,5 MB).
+
 ## 2026-09-09 (9. oturum) — v0.6.0: alt kategoriler ("Faturalar" üst kategorisi)
 - **İstek:** Fatura türleri (Su/Elektrik/Doğalgaz/İnternet/Telefon) "Faturalar" altında toplansın.
 - **Karar:** Gerçek alt kategori (hierarşi) — kullanıcı seçimi.
