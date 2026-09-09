@@ -3,6 +3,14 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (5. oturum) — v0.3.1: açılış ekranı + kayıt satırları zenginleşti
+- **Açılış (splash) ekranı:** Uygulama açılınca CalcMoney logosu (kumbara ikonu + "CalcMoney"
+  + "Gelir · Gider · Takip") ~1,7 sn görünüp yumuşak geçişle Genel Bakış'a gidiyor.
+  `screens/splash_page.dart` (yeni), `app.dart`'ta ilk ekran splash oldu. Paket eklenmedi.
+- **Kayıtlar satırları:** Gün başlıkları yerine her satırda artık **kategori adı** (başlık) +
+  alt satırda **tarih • not** + sağda **tutar** görünüyor. (`screens/records_page.dart`)
+- Sürüm: `0.3.1+4`. `flutter analyze` temiz, `flutter test` 12/12, `flutter build apk` başarılı (53,0 MB).
+
 ## 2026-09-09 (4. oturum) — v0.3.0: sabit gelir + gruplama + kategori analizi
 Kullanıcı istekleriyle birlikte uygulanan 5 madde:
 1. **Sabit kayıtlar gelir/gider olabiliyor:** DB v2 göçü (`recurring_expenses` → `type` sütunu,

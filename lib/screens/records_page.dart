@@ -79,31 +79,12 @@ class _KayitListesi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final children = <Widget>[];
-    String? oncekiGun;
-
-    for (final kayit in state.ayKayitlari) {
-      if (kayit.date != oncekiGun) {
-        children.add(
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-            child: Text(
-              dayLabelFromKey(kayit.date),
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ),
-        );
-        oncekiGun = kayit.date;
-      }
-      children.add(_KayitSatiri(state: state, kayit: kayit));
-    }
-
     return ListView(
       padding: const EdgeInsets.only(bottom: 88),
-      children: children,
+      children: [
+        for (final kayit in state.ayKayitlari)
+          _KayitSatiri(state: state, kayit: kayit),
+      ],
     );
   }
 }
@@ -119,6 +100,8 @@ class _KayitSatiri extends StatelessWidget {
     final kategori = state.kategoriGetir(kayit.categoryId);
     final renk = tipRengi(context, kayit.type);
     final isaret = kayit.type == RecordType.gelir ? '+' : '-';
+    final tarih = dayShortLabelFromKey(kayit.date);
+    final altYazi = kayit.note.isNotEmpty ? '$tarih • ${kayit.note}' : tarih;
 
     return Dismissible(
       key: ValueKey(kayit.id),
@@ -139,11 +122,16 @@ class _KayitSatiri extends StatelessWidget {
         onTap: () => showTransactionEditor(context, mevcut: kayit),
         leading: CategoryAvatar(category: kategori),
         title: Text(
-          kayit.note.isNotEmpty ? kayit.note : kategori.name,
+          kategori.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          altYazi,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(kategori.name),
         trailing: Text(
           '$isaret${formatMoney(kayit.amountKurus)}',
           style: Theme.of(context)

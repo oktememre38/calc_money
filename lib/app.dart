@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
-import 'screens/home_shell.dart';
+import 'screens/splash_page.dart';
 import 'state/app_state.dart';
 import 'theme.dart';
 
@@ -27,7 +27,7 @@ class CalcMoneyApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: const HomeShell(),
+        home: const SplashPage(),
       ),
     );
   }
