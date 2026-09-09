@@ -3,6 +3,25 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (13. oturum) — v0.8.0: taksit bitişi + bildirimler kaldırıldı
+- **Sonlu sabit kayıt (taksit):** Sabit kayıt formuna "Toplam ay" alanı eklendi (boş = sürekli;
+  taksit için 5 gibi). Bir sabit kayda bağlı (`recurring_id`) oluşturulan aylık kayıt sayısı
+  `toplam_ay` değerine ulaşınca sabit kayıt **otomatik silinir** (geçmiş aylık kayıtlar kalır).
+  DB **v7** (`recurring_expenses.toplam_ay`). `models/recurring_expense.dart` (toplamAy, notify
+  çıktı), `state/app_state.dart` (`_sonlandirilmasiGerekenleriSil` — sabit liste her yenilenişinde
+  ve kayıt ekleme sonrasında çalışır), `data/transaction_repository.dart` (`countByRecurring`),
+  `widgets/recurring_editor.dart` (alan + açıklama), `recurring_page.dart` (satırda "N ay" bilgisi).
+- **Hatırlatma/bildirim tamamen kaldırıldı** (kullanıcı isteği): `flutter_local_notifications` +
+  `timezone` paketleri ve `lib/services/notification_service.dart` silindi; `AppState` bildirim
+  çağrıları çıktı; `AndroidManifest.xml`'den izinler (POST_NOTIFICATIONS vb.) ve bildirim
+  alıcıları kaldırıldı; editörde "hatırlatma" anahtarı ve satırlardaki zil/"hatırlatma açık"
+  gösterimi silindi. Gün seçici "Kayıt günü" olarak kaldı (aylara eklenirken kaydın gününü belirler).
+- `pubspec.yaml`: `0.8.0+11` (+ `share_plus`/`file_picker` kalır; eski bildirim paketleri çıktı).
+- `flutter analyze` temiz, `flutter test` 16/16, `flutter build apk --release` başarılı (52,3 MB,
+  aynı kalıcı keystore imzası — v0.7.0 üzerine güncelleme sorunsuz kurulur).
+- Not: Dokümanlar güncellendi (`proje-bilgisi.md` vizyon/kararlar/veri modeli/mimari,
+  `kurulum-rehberi.md` bölüm 3 artık release keystore kurulumunu anlatıyor).
+
 ## 2026-09-09 (12. oturum) — v0.7.0: Gelir/Gider bölümleri + yeni kategoriler + hesap kesim günü
 Bu sürüm, kullanıcının istediği üç işi birden içerir (tek sürüm kararı):
 - **Sabit Kayıtlar sayfası hiyerarşisi:** Düz kategori listesi yerine artık her zaman

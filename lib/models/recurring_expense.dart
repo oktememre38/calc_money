@@ -1,10 +1,11 @@
 import 'record_type.dart';
 
 /// Tekrarlayan sabit kayıt: abonelik, kira, fatura (gider) veya kira geliri,
-/// fon/temettü getirisi gibi tekrarlayan gelir.
+/// fon/temettü getirisi gibi tekrarlayan gelir; ayrıca sonlu taksitler.
 ///
-/// Her ayın `dayOfMonth` gününde bildirim ile hatırlatılır; aylık kayda
-/// otomatik işlenmez (kullanıcı "Aylara ekle" ile istediği aylara ekler).
+/// `dayOfMonth` (1..28) kaydın "Aylara ekle" ile eklendiğinde hangi güne
+/// yazılacağını belirler. `toplamAy` 0 ise kayıt süreklidir; 0'dan büyükse
+/// (ör. 5 taksit) o sayıda aylık kayıt oluşturulunca kayıt otomatik silinir.
 class RecurringExpense {
   final int? id;
   final String name;
@@ -12,7 +13,9 @@ class RecurringExpense {
   final int amountKurus;
   final int dayOfMonth; // 1..28
   final int categoryId;
-  final bool notify;
+
+  /// 0 = sürekli; >0 ise toplam oluşturulacak ay sayısı (taksit/bitiş).
+  final int toplamAy;
   final bool active;
   final String createdAt;
 
@@ -23,10 +26,12 @@ class RecurringExpense {
     required this.amountKurus,
     required this.dayOfMonth,
     required this.categoryId,
-    this.notify = true,
+    this.toplamAy = 0,
     this.active = true,
     this.createdAt = '',
   });
+
+  bool get sonlu => toplamAy > 0;
 
   Map<String, Object?> toMap() => {
         'name': name,
@@ -34,7 +39,7 @@ class RecurringExpense {
         'amount_kurus': amountKurus,
         'day_of_month': dayOfMonth,
         'category_id': categoryId,
-        'notify': notify ? 1 : 0,
+        'toplam_ay': toplamAy,
         'active': active ? 1 : 0,
         'created_at': createdAt,
       };
@@ -46,7 +51,7 @@ class RecurringExpense {
         amountKurus: m['amount_kurus'] as int,
         dayOfMonth: m['day_of_month'] as int,
         categoryId: m['category_id'] as int,
-        notify: (m['notify'] as int) == 1,
+        toplamAy: (m['toplam_ay'] as int?) ?? 0,
         active: (m['active'] as int) == 1,
         createdAt: (m['created_at'] as String?) ?? '',
       );
@@ -58,7 +63,7 @@ class RecurringExpense {
     int? amountKurus,
     int? dayOfMonth,
     int? categoryId,
-    bool? notify,
+    int? toplamAy,
     bool? active,
   }) =>
       RecurringExpense(
@@ -68,7 +73,7 @@ class RecurringExpense {
         amountKurus: amountKurus ?? this.amountKurus,
         dayOfMonth: dayOfMonth ?? this.dayOfMonth,
         categoryId: categoryId ?? this.categoryId,
-        notify: notify ?? this.notify,
+        toplamAy: toplamAy ?? this.toplamAy,
         active: active ?? this.active,
         createdAt: createdAt,
       );

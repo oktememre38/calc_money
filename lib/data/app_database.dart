@@ -84,7 +84,7 @@ class AppDatabase {
     final dir = await getDatabasesPath();
     final db = await openDatabase(
       p.join(dir, 'calc_money.db'),
-      version: 6,
+      version: 7,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -135,6 +135,12 @@ class AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_trans_donem ON transactions(donem)',
       );
       await _yeniKategorileriEkle(db);
+    }
+    if (eski < 7) {
+      // v7: sabit kayıtlara "toplam ay" (0 = sürekli, >0 = taksit/bitiş).
+      await db.execute(
+        'ALTER TABLE recurring_expenses ADD COLUMN toplam_ay INTEGER NOT NULL DEFAULT 0',
+      );
     }
   }
 
@@ -235,6 +241,7 @@ class AppDatabase {
         day_of_month INTEGER NOT NULL CHECK (day_of_month BETWEEN 1 AND 28),
         category_id INTEGER NOT NULL REFERENCES categories(id),
         notify INTEGER NOT NULL DEFAULT 1,
+        toplam_ay INTEGER NOT NULL DEFAULT 0,
         active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL
       )

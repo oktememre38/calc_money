@@ -41,11 +41,12 @@ class RecurringEditor extends StatefulWidget {
 class _RecurringEditorState extends State<RecurringEditor> {
   late final TextEditingController _ad;
   late final TextEditingController _tutar;
+  late final TextEditingController _toplamAy;
   late RecordType _tip;
   late int _gun;
   int? _kategoriId;
-  bool _bildirim = true;
   String? _tutarHatasi;
+  String? _toplamAyHatasi;
 
   bool get _duzenleme => widget.mevcut != null;
 
@@ -58,15 +59,18 @@ class _RecurringEditorState extends State<RecurringEditor> {
     _tutar = TextEditingController(
       text: m != null ? kurusToGirdi(m.amountKurus) : '',
     );
+    _toplamAy = TextEditingController(
+      text: (m != null && m.toplamAy > 0) ? '${m.toplamAy}' : '',
+    );
     _gun = m?.dayOfMonth ?? 1;
     _kategoriId = m?.categoryId;
-    _bildirim = m?.notify ?? true;
   }
 
   @override
   void dispose() {
     _ad.dispose();
     _tutar.dispose();
+    _toplamAy.dispose();
     super.dispose();
   }
 
@@ -77,6 +81,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
         ? state.gelirKategorileri
         : state.giderKategorileri;
     final secili = _seciliKategori(secenekler);
+    final toplamAy = int.tryParse(_toplamAy.text) ?? 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -104,8 +109,9 @@ class _RecurringEditorState extends State<RecurringEditor> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Her ay tekrarlayan gider (kira, abonelik, fatura) veya gelir '
-            '(kira getirisi, temettü vb.) ekleyebilirsin.',
+            'Her ay tekrarlayan gider (kira, abonelik, taksit) veya gelir '
+            '(kira getirisi, maaş) ekleyebilirsin. Taksit gibi sonlu bir kayıt '
+            'için "Toplam ay" girebilirsin.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
@@ -134,7 +140,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
           TextField(
             controller: _ad,
             decoration: const InputDecoration(
-              labelText: 'Ad (örn. Netflix, Kira, Fon getirisi)',
+              labelText: 'Ad (örn. Netflix, Kira, Telefon taksiti)',
               border: OutlineInputBorder(),
             ),
           ),
@@ -156,10 +162,37 @@ class _RecurringEditorState extends State<RecurringEditor> {
             },
           ),
           const SizedBox(height: 16),
+          TextField(
+            controller: _toplamAy,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              labelText: 'Toplam ay (boş = sürekli)',
+              hintText: 'Taksit için 5 gibi bir sayı',
+              errorText: _toplamAyHatasi,
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (_) {
+              if (_toplamAyHatasi != null) {
+                setState(() => _toplamAyHatasi = null);
+              }
+            },
+          ),
+          if (toplamAy > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                '$toplamAy aylık kayıt oluşturulunca bu sabit kayıt otomatik silinir.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ),
+          const SizedBox(height: 16),
           DropdownButtonFormField<int>(
             initialValue: _gun,
             decoration: const InputDecoration(
-              labelText: 'Hatırlatma günü',
+              labelText: 'Kayıt günü',
               border: OutlineInputBorder(),
             ),
             items: [
@@ -177,15 +210,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
             seciliId: secili?.id,
             onSec: (c) => setState(() => _kategoriId = c.id),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Aylık hatırlatma bildirimi'),
-            subtitle: const Text(
-                'Seçilen günde saat 09:00\'da bildirim gönderilir.'),
-            value: _bildirim,
-            onChanged: (v) => setState(() => _bildirim = v),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: _kaydet,
             icon: const Icon(Icons.check),
@@ -210,6 +235,14 @@ class _RecurringEditorState extends State<RecurringEditor> {
     final kurus = parseToKurus(_tutar.text);
     if (kurus == null || kurus <= 0) {
       setState(() => _tutarHatasi = 'Geçerli bir tutar girin.');
+      return;
+    }
+    final hamToplamAy = _toplamAy.text.trim();
+    final toplamAy = hamToplamAy.isEmpty
+        ? 0
+        : (int.tryParse(hamToplamAy) ?? -1);
+    if (toplamAy < 0) {
+      setState(() => _toplamAyHatasi = 'Geçerli bir sayı girin (boş bırakabilirsin).');
       return;
     }
     if (_ad.text.trim().isEmpty) {
@@ -238,7 +271,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
         amountKurus: kurus,
         dayOfMonth: _gun,
         categoryId: secili.id,
-        notify: _bildirim,
+        toplamAy: toplamAy,
       );
     } else {
       await state.tekrarlayanEkle(
@@ -247,7 +280,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
         amountKurus: kurus,
         dayOfMonth: _gun,
         categoryId: secili.id,
-        notify: _bildirim,
+        toplamAy: toplamAy,
       );
     }
     if (mounted) Navigator.pop(context);

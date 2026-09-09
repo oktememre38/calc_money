@@ -303,9 +303,8 @@ class _SabitKayitSatiri extends StatelessWidget {
         : gelirRengi(context);
     final messenger = ScaffoldMessenger.of(context);
 
-    final bildirimMetni = kayit.notify ? 'hatırlatma açık' : 'hatırlatma kapalı';
-    final altYazi =
-        '${kategori.name} • Her ayın ${kayit.dayOfMonth}. günü • $bildirimMetni';
+    final altYazi = '${kategori.name} • Her ayın ${kayit.dayOfMonth}. günü'
+        '${kayit.sonlu ? ' • ${kayit.toplamAy} ay' : ''}';
 
     return Dismissible(
       key: ValueKey('tekrarlayan-${kayit.id}'),
@@ -352,12 +351,6 @@ class _SabitKayitSatiri extends StatelessWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (kayit.notify)
-                const Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: Icon(Icons.notifications_active,
-                      size: 18, color: Colors.amber),
-                ),
               Text(
                 formatMoney(kayit.amountKurus),
                 style: tema.textTheme.titleSmall

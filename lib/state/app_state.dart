@@ -11,7 +11,6 @@ import '../models/monthly_summary.dart';
 import '../models/record_type.dart';
 import '../models/recurring_expense.dart';
 import '../models/transaction_record.dart';
-import '../services/notification_service.dart';
 import '../utils/dates.dart';
 
 /// Uygulamanın tek durum merkezi (ChangeNotifier).
@@ -24,7 +23,6 @@ class AppState extends ChangeNotifier {
   final CategoryRepository kategoriler;
   final TransactionRepository islemler;
   final RecurringRepository tekrarlayanlar;
-  final NotificationService bildirimler = NotificationService();
 
   AppState(this.db)
       : kategoriler = CategoryRepository(db),
@@ -141,7 +139,6 @@ class AppState extends ChangeNotifier {
     await _ayarYukle();
     _gorunenAy = suDonemAy;
     _gorunenYil = _gorunenAy.year;
-    await bildirimler.init();
     await yenile();
   }
 
@@ -341,7 +338,7 @@ class AppState extends ChangeNotifier {
     required int amountKurus,
     required int dayOfMonth,
     required int categoryId,
-    bool notify = true,
+    int toplamAy = 0,
   }) async {
     await tekrarlayanlar.insert(
       RecurringExpense(
@@ -350,7 +347,7 @@ class AppState extends ChangeNotifier {
         amountKurus: amountKurus,
         dayOfMonth: dayOfMonth,
         categoryId: categoryId,
-        notify: notify,
+        toplamAy: toplamAy,
         active: true,
         createdAt: DateTime.now().toIso8601String(),
       ),
@@ -365,7 +362,7 @@ class AppState extends ChangeNotifier {
     required int amountKurus,
     required int dayOfMonth,
     required int categoryId,
-    bool notify = true,
+    int toplamAy = 0,
   }) async {
     final yeniTip = type ?? mevcut.type;
     await tekrarlayanlar.update(
@@ -375,7 +372,7 @@ class AppState extends ChangeNotifier {
         amountKurus: amountKurus,
         dayOfMonth: dayOfMonth,
         categoryId: categoryId,
-        notify: notify,
+        toplamAy: toplamAy,
       ),
     );
 
@@ -496,13 +493,31 @@ class AppState extends ChangeNotifier {
 
   Future<void> _tekrarlayanYukle() async {
     _tekrarlayanListesi = await tekrarlayanlar.getAll();
-    // Bildirimleri güncel listeye göre yeniden planla.
-    await bildirimler.senkronize(_tekrarlayanListesi);
+    await _sonlandirilmasiGerekenleriSil();
+  }
+
+  /// "Toplam ay" dolmuş (belirlenen taksit/ay sayısına ulaşılmış) sabit
+  /// kayıtları otomatik siler. Aylık kayıtlar (geçmiş) veritabanında kalır.
+  Future<void> _sonlandirilmasiGerekenleriSil() async {
+    final silinecek = <int>[];
+    for (final kayit in _tekrarlayanListesi) {
+      final id = kayit.id;
+      if (id == null || kayit.toplamAy <= 0) continue;
+      final sayi = await islemler.countByRecurring(id);
+      if (sayi >= kayit.toplamAy) silinecek.add(id);
+    }
+    if (silinecek.isEmpty) return;
+    for (final id in silinecek) {
+      await tekrarlayanlar.delete(id);
+    }
+    _tekrarlayanListesi = await tekrarlayanlar.getAll();
   }
 
   Future<void> _kayitSonrasiYenile() async {
     await _ayYukle();
     await _yilYukle();
+    // Kayıt ekleme "toplam ay" dolu bir sabit kaydı sonlandırabilir.
+    await _tekrarlayanYukle();
     notifyListeners();
   }
 

@@ -35,53 +35,20 @@ flutter pub get
 `flutter create .` **sadece** `android/`, `ios/` platform klasörlerini üretir;
 `lib/` kodlarımıza ve `pubspec.yaml`'a dokunmaz.
 
-## 3. Android yapılandırması (flutter_local_notifications için)
-Aşağıdaki iki dosyayı el ile düzenle.
-
-### a) `android/app/build.gradle.kts` (Kotlin DSL, yeni projelerde varsayılan)
-Desugaring'i aç (paket java.time kullanır). `android { }` bloğundaki mevcut `compileOptions` içine ekle:
-```kotlin
-compileOptions {
-    isCoreLibraryDesugaringEnabled = true
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
+## 3. Release imza yapılandırması (keystore)
+APK'lar kalıcı bir keystore ile imzalanır (v0.7.0+). Bu repo `public` olduğundan anahtar dosyası
+**git'e girmez**; her geliştirme makinesinde elle kurulur:
+- Keystore dosyasını makinede tut (örn. `C:\Users\<kullanici>\keystores\calcmoney-release.jks`).
+- `android/key.properties` oluştur (gitignore'da):
 ```
-Ayrıca dosya sonundaki `dependencies { }` bloğuna ekle:
-```kotlin
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
+storePassword=...
+keyPassword=...
+keyAlias=calcmoney
+storeFile=C:/Users/<kullanici>/keystores/calcmoney-release.jks
 ```
-> Proje hâlâ Groovy (`android/app/build.gradle`) kullanıyorsa karşılıkları:
-> `compileOptions { coreLibraryDesugaringEnabled true }` ve
-> `dependencies { coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4' }`
-
-### b) `android/app/src/main/AndroidManifest.xml`
-`<manifest>` içine izinler:
-```xml
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-<uses-permission android:name="android.permission.VIBRATE"/>
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-```
-`<application>` içine bildirim alıcıları:
-```xml
-<receiver android:exported="false"
-    android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
-<receiver android:exported="false"
-    android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
-    <intent-filter>
-        <action android:name="android.intent.action.BOOT_COMPLETED"/>
-        <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
-        <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
-        <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
-    </intent-filter>
-</receiver>
-```
-> Not: Android 12+ cihazlarda zamanlanmış bildirimin tam zamanda gelmesi için
-> `SCHEDULE_EXACT_ALARM` izni kullanıcı tarafından ayrıca verilebilir; uygulama
-> hassas olmayan zamanlamayla da çalışır (bildirim yaklaşık zamanda gelir).
+- `build.gradle.kts` bu dosyayı okur; dosya yoksa geliştirme için debug imzaya düşer.
+- UYARI: Anahtar + parola kaybolursa mevcut kullanıcılar güncelleme alamaz; iki yerde yedekle.
+- İki bilgisayar kullanılıyorsa **aynı keystore dosyası** her iki makinede de aynı yolu göstermeli.
 
 ## 4. Analiz ve çalıştır
 ```powershell
@@ -93,13 +60,15 @@ flutter run -d <cihaz-idsi>     # adb devices ile listele
   `pubspec.yaml` sürüm kısıtlarına bak (paketlerin güncel büyük sürümlerini kontrol et).
 
 ## 5. Çalışma sonrası test senaryoları
-1. İlk açılış: varsayılan kategoriler görünmeli, bildirim izni sorulmalı.
+1. İlk açılış: varsayılan kategoriler görünmeli.
 2. Bir gelir + birkaç gider ekle → Genel Bakış'ta ay dengesi doğru mu?
 3. Geçmiş bir aya geç (oklar) → kayıtlar ve toplamlar.
 4. Yıllık sekmesi → 12 ay dökümü + yıl toplamı.
-5. Abonelik ekle (örn. "Netflix", 149.99, ayın 5'i, Abonelik kategorisi) →
-   bildirim programlandı mı (güncelleme sonrası kontrol için log).
-6. Kayıt düzenleme, silme (onay sorusu), gelir/gider tipi değiştirme.
+5. Sabit kayıt ekle (örn. "Netflix", 149.99, ayın 5'i, Abonelik) → "Aylara ekle" ile ay seç,
+   kayıt o güne yazıldı mı? Sonlu taksit için "Toplam ay" gir → o sayıda kayıt sonrası
+   sabit kayıt otomatik siliniyor mu?
+6. Ayarlar → Yedek al → .db dosyası oluşuyor mu; geri yükleyince veri geliyor mu?
+7. Kayıt düzenleme, silme (onay sorusu), gelir/gider tipi değiştirme.
 
 ## 6. Geliştirme döngüsü notları
 - Dart kodu `lib/` altındadır; değiştirip `flutter run` (hot reload) ile dene.

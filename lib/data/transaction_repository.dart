@@ -188,6 +188,17 @@ class TransactionRepository {
     return db.insert('transactions', kayit.toMap());
   }
 
+  /// Bir sabit kayda bağlı kaç aylık kayıt oluşturulmuş sayar ("toplam ay"
+  /// kontrolü için).
+  Future<int> countByRecurring(int recurringId) async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) AS sayi FROM transactions WHERE recurring_id = ?',
+      [recurringId],
+    );
+    return (rows.first['sayi'] as int?) ?? 0;
+  }
+
   Future<void> update(TransactionRecord kayit) async {
     final db = await _db.database;
     await db.update(

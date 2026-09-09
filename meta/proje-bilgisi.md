@@ -7,7 +7,7 @@ kaydeder. Uygulama:
 - **Aylık gelir – gider dengesini** gösterir.
 - Tüm yılın kayıtlarını tutar; yıllık **toplam giren / çıkan** parayı ve aylık
   dökümü sunar.
-- Tekrarlayan sabit giderler için her ay **hatırlatma bildirimi** gönderir.
+- Sabit (tekrarlayan) gider/gelirleri ve sonlu taksitleri tek yerden yönetir.
 
 ## Kararlar (değişmeden önce buraya bak)
 - **Platform:** Flutter (tek kod, Android hedefli; iOS ileride). Dart >= 3.3.
@@ -18,15 +18,16 @@ kaydeder. Uygulama:
 - **Arayüz dili:** Türkçe.
 - **Durum yönetimi:** `provider` + tek `AppState` (ChangeNotifier). Stream değil,
   repo yazma sonrası yeniden yükleme yaklaşımı.
-- **Bildirimler:** `flutter_local_notifications` + `timezone`. Her aktif abonelik için
-  ayın belirli gününde tekrarlanan tek bir zamanlanmış bildirim kullanılır
-  (`matchDateTimeComponents: dayOfMonthAndTime`). Her açılışta/degisiklikte
-  bildirimler yeniden programlanır (kendi kendini iyileştirir).
+- **Bildirim:** YOK (v0.8.0'dan itibaren tamamen kaldırıldı — hatırlatıcı/alarm
+  istenmedi; uygulama yalnızca kayıt ve denge tutar).
 - **Kategori modeli:** Ön tanımlı kategori seti DB'ye tohumlanır. Kullanıcı kategori eklemesi
   henüz yok (sonraki adım).
-- **Tekrarlayan gider günü:** 1–28 arası. (29–31 günlük aylar karmaşıklığından kaçınıldı.)
-  Tekrarlayan kayıt, aylık gider kaydına **otomatik işlenmez**; hatırlatıcı + hızlı
-  "kayıt ekle" ön doldurma sağlar. Kullanıcı gerçekleşen kaydı onaylayıp ekler.
+- **Tekrarlayan kayıt günü:** 1–28 arası. (29–31 günlük aylar karmaşıklığından kaçınıldı.)
+  Tekrarlayan kayıt, aylık gider kaydına **otomatik işlenmez**; kullanıcı "Aylara ekle" ile
+  istediği ayları seçer, kayıt o ayın `day_of_month` gününe yazılır.
+- **Sonlu sabit kayıt (taksit):** Sabit kayda opsiyonel `toplam_ay` girilir (0 = sürekli).
+  O sabit kayda bağlı oluşturulan aylık kayıt sayısı `toplam_ay`'a ulaşınca sabit kayıt
+  otomatik silinir (aylık kayıtlar durur).
 - **Hesap dönemi (kesim günü):** Varsayılan dönem takvim ayıdır. Ayarlar'dan tek genel
   "hesap kesim günü" (1–28) seçilebilir: kesim gününe kadar (dahil) eklenen kayıt o ayın,
   kesimden SONRASI bir sonraki ayın dönemine işlenir. Her kayıt, ait olduğu dönemin
@@ -43,7 +44,8 @@ kaydeder. Uygulama:
 - `categories(id, name, type[0=gelir,1=gider], icon, color, parent_id)`
 - `transactions(id, type[0/1], amount_kurus[pozitif], category_id, date[yyyy-MM-dd],
   donem[yyyy-MM hesap dönemi etiketi], note, created_at, recurring_id)`
-- `recurring_expenses(id, name, amount_kurus, day_of_month[1-28], category_id, type, notify[0/1], active[0/1], created_at)`
+- `recurring_expenses(id, name, amount_kurus, day_of_month[1-28], category_id, type,
+  notify[0/1 kullanılmıyor], toplam_ay[0=sürekli, N=sonlu], active[0/1], created_at)`
 
 Aylık/yıllık sorgular `transactions.donem` etiketiyle (`LIKE '2026-09%'`, yıl `substr(donem,1,4)`) gruplar.
 `date` gerçek tarihi, `donem` ise kesim gününe göre hesaplanan dönem etiketini tutar.
@@ -57,7 +59,6 @@ lib/
   models/                    Category, RecordType, TransactionRecord, RecurringExpense, Aggregate
   data/                      app_database.dart (şema + tohum kategoriler)
                              *_repository.dart (kategori, işlem, tekrarlayan)
-  services/notification_service.dart
   state/app_state.dart       tek ChangeNotifier: veri + görünüm (ay/yıl) durumu
   screens/                   home_shell (alt sekmeler), overview, records,
                              annual, recurring + add/edit bottom sheet'leri
@@ -70,7 +71,7 @@ MVP (ilk sürüm — mevcut):
 - Kayıt ekleme/düzenleme/silme (gelir-gider, kategori, tutar, tarih, not)
 - Aylık liste + aylık gelir/gider/denge
 - Yıllık döküm (12 ay + yıl toplamı)
-- Tekrarlayan sabit gider yönetimi + aylık bildirim
+- Tekrarlayan sabit gider/gelir ve sonlu taksit yönetimi ("Aylara ekle")
 
 Sonraki adımlar:
 Tamamlanan (v0.3.0):
@@ -106,6 +107,13 @@ Tamamlanan (v0.7.0):
 - [x] **Veri yedeği (dışa/içe aktarma .db):** Ayarlar → "Veri yedeği" ile tek `.db` dosyası
       paylaşılabilir (Drive/e-posta) ve aynı dosyadan geri yüklenebilir (SQLite doğrulamalı).
       Yeni paketler: `share_plus`, `file_picker`.
+
+Tamamlanan (v0.8.0):
+- [x] **Sonlu sabit kayıt (taksit bitişi):** Sabit kayıt formunda "Toplam ay" (0=sürekli).
+      Bağlı aylık kayıt sayısı o değere ulaşınca sabit kayıt otomatik silinir (DB v7).
+- [x] **Hatırlatma/bildirim kaldırıldı:** `flutter_local_notifications` + `timezone` paketleri,
+      `notification_service.dart`, Android izinleri/alıcıları ve "hatırlatma" gösterimleri
+      tamamen çıktı; uygulama yalnızca gelir/gider dengesi tutar.
 
 Bekleyen — yol haritası (öncelik önerisi sırasıyla):
 - [ ] v0.6.x — **Kategori bütçe/limitleri**: kategoriye aylık limit, ilerleme çubuğu, aşınca uyarı
