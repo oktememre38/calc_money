@@ -12,6 +12,7 @@ build/
 *.jks
 *.keystore
 local.properties
+android/key.properties
 
 # OS / editor
 Thumbs.db
