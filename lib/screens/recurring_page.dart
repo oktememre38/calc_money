@@ -7,6 +7,7 @@ import '../utils/money.dart';
 import '../widgets/category_visual.dart';
 import '../widgets/common.dart';
 import '../widgets/recurring_editor.dart';
+import '../widgets/recurring_months_sheet.dart';
 import '../widgets/transaction_editor.dart';
 
 /// Sabit giderler: tekrarlayan abonelik/fatura yönetimi + bildirimler.
@@ -100,7 +101,7 @@ class _SabitGiderSatiri extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
-          onTap: () => showRecurringEditor(context, mevcut: kayit),
+          onTap: () => showRecurringMonthsSheet(context, kayit),
           leading: Stack(
             children: [
               CategoryAvatar(category: kategori),

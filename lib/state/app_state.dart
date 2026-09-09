@@ -242,6 +242,51 @@ class AppState extends ChangeNotifier {
     await _tekrarlayanSonrasiYenile();
   }
 
+  /// Bir sabit gideri seçilen aylara toplu olarak kayıt olarak ekler.
+  ///
+  /// Her ay için sabit giderin gününde bir gider kaydı oluşturulur. O ay içinde
+  /// birebir aynı kayıt (aynı kategori + tutar + not) zaten varsa o ay atlanır
+  /// (çift kayıt koruması). Dönen değer: (eklenen, atlanan).
+  Future<({int eklenen, int atlanan})> tekrarlayanTopluEkle(
+    RecurringExpense gider,
+    List<DateTime> aylar,
+  ) async {
+    var eklenen = 0;
+    var atlanan = 0;
+    final gorulen = <String>{};
+
+    for (final ay in aylar) {
+      final anahtar = '${ay.year}-${ay.month}';
+      if (!gorulen.add(anahtar)) continue;
+
+      final mevcutlar = await islemler.listByMonth(ay.year, ay.month);
+      final zatenVar = mevcutlar.any((k) =>
+          k.type == RecordType.gider &&
+          k.categoryId == gider.categoryId &&
+          k.amountKurus == gider.amountKurus &&
+          k.note == gider.name);
+      if (zatenVar) {
+        atlanan++;
+        continue;
+      }
+
+      await islemler.insert(
+        TransactionRecord(
+          type: RecordType.gider,
+          amountKurus: gider.amountKurus,
+          categoryId: gider.categoryId,
+          date: _dateKey(DateTime(ay.year, ay.month, gider.dayOfMonth)),
+          note: gider.name,
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+      eklenen++;
+    }
+
+    await _kayitSonrasiYenile();
+    return (eklenen: eklenen, atlanan: atlanan);
+  }
+
   // --- Yardımcı yükleyiciler ---
   Future<void> _ayYukle() async {
     _ayKayitlari = await islemler.listByMonth(_gorunenAy.year, _gorunenAy.month);

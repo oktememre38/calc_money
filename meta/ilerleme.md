@@ -3,6 +3,22 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (3. oturum) — Sabit giderleri "aylara tik atıp" toplu ekleme (v0.2.0)
+- **İstek:** Sabit giderler her ay "⋮ menü → bu ay için kayıt ekle" ile elle eklenmesin;
+  kullanıcı istediği aylara tik atsın, onlar otomatik kayda geçsin.
+- **Tasarım kararı (kullanıcı onayladı):** Tam otomatik yerine **kontrolü kullanıcıda** olan
+  "ay seç" yöntemi → çift kayıt riski yok.
+- **Yapılan:** Sabit gider satırına dokununca yeni **"Aylara ekle"** penceresi açılıyor
+  (bu aydan itibaren +12 ay, tik listesi). İşaretlenen her ay için sabit giderin gününde,
+  tutarı/kategorisi/ismiyle bir **gider kaydı** oluşuyor. Çift kayıt koruması: aynı ayda
+  birebir aynı kayıt (kategori+tutar+not) varsa o ay atlanıyor; sonuç snackbar ile özetleniyor
+  ("3 aya eklendi, 1 ay zaten kayıtlıydı").
+- **Dosyalar:** `widgets/recurring_months_sheet.dart` (yeni pencere),
+  `state/app_state.dart` (`tekrarlayanTopluEkle`), `screens/recurring_page.dart` (satır onTap bağlama).
+- **Sürüm:** `0.2.0+2`. Doğrulama: `flutter analyze` temiz, `flutter test` 12/12,
+  `flutter build apk` başarılı (52,8 MB).
+- **Sonraki:** Güncellemeyi telefona kur (KALDIRMADAN, üzerine) ve dene.
+
 ## 2026-09-09 (2. oturum) — Flutter + Android kurulumu tamamlandı; ilk derleme başarılı
 **Bu makinenin ortamı (devam için önemli):**
 - Flutter **3.47.2** stable → `E:\flutter` (Dart 3.13.2). `E:\flutter\bin` kullanıcı PATH'inde.
