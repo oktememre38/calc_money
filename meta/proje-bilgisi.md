@@ -77,6 +77,10 @@ Tamamlanan (v0.5.0):
 - [x] **Arama + filtre**: kayıtlarda kategori/not'a göre arama & filtre (v0.5.0)
 - [x] **Ortalama & karşılaştırma**: kategori analizinde aylık ortalama, geçen yıla/son iki aya göre % değişim (v0.5.0)
 
+Tamamlanan (v0.6.0):
+- [x] **Alt kategoriler**: "Faturalar" üst kategorisi altında Su/Elektrik/Doğalgaz/İnternet/Telefon
+      (DB v5 parent_id, iki aşamalı seçici, sabitler üst kategoriye göre gruplanır)
+
 Bekleyen — yol haritası (öncelik önerisi sırasıyla):
 - [ ] v0.6.x — **Kategori bütçe/limitleri**: kategoriye aylık limit, ilerleme çubuğu, aşınca uyarı
 - [ ] v0.6.x — **Yedekleme / dışa aktarma**: tüm veriyi dosya olarak dışa aktar (CSV/JSON) + geri yükle — veri kaybına karşı en kritik

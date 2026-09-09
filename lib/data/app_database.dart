@@ -15,7 +15,7 @@ class AppDatabase {
     final dir = await getDatabasesPath();
     final db = await openDatabase(
       p.join(dir, 'calc_money.db'),
-      version: 4,
+      version: 5,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -46,6 +46,62 @@ class AppDatabase {
         )
       ''');
     }
+    if (eski < 5) {
+      // v5: kategorilere üst kategori (alt kategori) desteği.
+      await db.execute(
+        'ALTER TABLE categories ADD COLUMN parent_id INTEGER',
+      );
+      await _faturaGoc(db);
+    }
+  }
+
+  /// "Faturalar" üst kategorisini kurar ve Su/Elektrik/Doğalgaz/İnternet/
+  /// Telefon gibi varsa mevcut kategorileri altına taşır (kimlikleri korunur).
+  Future<void> _faturaGoc(Database db) async {
+    final ustId = await _kategoriBulVeyaEkle(
+      db,
+      name: 'Faturalar',
+      type: 1,
+      icon: 'receipt_long',
+      color: 0xFF006064,
+    );
+    for (final cocuk in _faturaCocuklar) {
+      final cocukId = await _kategoriBulVeyaEkle(
+        db,
+        name: cocuk['name'] as String,
+        type: 1,
+        icon: cocuk['icon'] as String,
+        color: cocuk['color'] as int,
+      );
+      await db.update(
+        'categories',
+        {'parent_id': ustId},
+        where: 'id = ?',
+        whereArgs: [cocukId],
+      );
+    }
+  }
+
+  Future<int> _kategoriBulVeyaEkle(
+    Database db, {
+    required String name,
+    required int type,
+    required String icon,
+    required int color,
+  }) async {
+    final rows = await db.query(
+      'categories',
+      columns: ['id'],
+      where: 'name = ? AND type = ?',
+      whereArgs: [name, type],
+    );
+    if (rows.isNotEmpty) return rows.first['id'] as int;
+    return db.insert('categories', {
+      'name': name,
+      'type': type,
+      'icon': icon,
+      'color': color,
+    });
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -55,7 +111,8 @@ class AppDatabase {
         name TEXT NOT NULL,
         type INTEGER NOT NULL,
         icon TEXT NOT NULL,
-        color INTEGER NOT NULL
+        color INTEGER NOT NULL,
+        parent_id INTEGER
       )
     ''');
     await db.execute('''
@@ -93,7 +150,8 @@ class AppDatabase {
     await _seedCategories(db);
   }
 
-  Future<void> _seedCategories(Database db) async {    final batch = db.batch();
+  Future<void> _seedCategories(Database db) async {
+    final batch = db.batch();
     for (final seed in _gelirTohum) {
       batch.insert('categories', {...seed, 'type': 0});
     }
@@ -101,6 +159,17 @@ class AppDatabase {
       batch.insert('categories', {...seed, 'type': 1});
     }
     await batch.commit(noResult: true);
+
+    // "Faturalar" üst kategorisi ve alt kategorileri.
+    final ustId = await db.insert('categories', {
+      'name': 'Faturalar',
+      'type': 1,
+      'icon': 'receipt_long',
+      'color': 0xFF006064,
+    });
+    for (final cocuk in _faturaCocuklar) {
+      await db.insert('categories', {...cocuk, 'type': 1, 'parent_id': ustId});
+    }
   }
 
   static const _gelirTohum = <Map<String, Object>>[
@@ -113,10 +182,6 @@ class AppDatabase {
 
   static const _giderTohum = <Map<String, Object>>[
     {'name': 'Kira', 'icon': 'apartment', 'color': 0xFF5D4037},
-    {'name': 'Su', 'icon': 'water_drop', 'color': 0xFF0277BD},
-    {'name': 'Doğalgaz', 'icon': 'local_fire_department', 'color': 0xFFE65100},
-    {'name': 'Elektrik', 'icon': 'bolt', 'color': 0xFFF9A825},
-    {'name': 'İnternet', 'icon': 'wifi', 'color': 0xFF00695C},
     {'name': 'Market', 'icon': 'shopping_cart', 'color': 0xFF2E7D32},
     {'name': 'Abonelik', 'icon': 'subscriptions', 'color': 0xFF7B1FA2},
     {'name': 'Ulaşım', 'icon': 'directions_bus', 'color': 0xFFEF6C00},
@@ -125,5 +190,13 @@ class AppDatabase {
     {'name': 'Eğitim', 'icon': 'school', 'color': 0xFF283593},
     {'name': 'Giyim', 'icon': 'checkroom', 'color': 0xFF6D4C41},
     {'name': 'Diğer', 'icon': 'category', 'color': 0xFF616161},
+  ];
+
+  static const _faturaCocuklar = <Map<String, Object>>[
+    {'name': 'Su', 'icon': 'water_drop', 'color': 0xFF0277BD},
+    {'name': 'Doğalgaz', 'icon': 'local_fire_department', 'color': 0xFFE65100},
+    {'name': 'Elektrik', 'icon': 'bolt', 'color': 0xFFF9A825},
+    {'name': 'İnternet', 'icon': 'wifi', 'color': 0xFF00695C},
+    {'name': 'Telefon', 'icon': 'phone_android', 'color': 0xFF00838F},
   ];
 }

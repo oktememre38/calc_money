@@ -27,7 +27,6 @@ class _HomeShellState extends State<HomeShell> {
         index: _sekme,
         children: [
           OverviewPage(
-            onKayitlariGoster: () => _sekmeyeGit(1),
             onSabitleriGoster: () => _sekmeyeGit(3),
           ),
           const RecordsPage(),

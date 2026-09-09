@@ -7,7 +7,7 @@ import '../models/record_type.dart';
 import '../models/recurring_expense.dart';
 import '../state/app_state.dart';
 import '../utils/money.dart';
-import 'category_visual.dart';
+import 'category_picker.dart';
 
 /// Tekrarlayan sabit kayıt (gider veya gelir) ekleme/düzenleme alt sayfası.
 Future<void> showRecurringEditor(
@@ -171,22 +171,11 @@ class _RecurringEditorState extends State<RecurringEditor> {
           const SizedBox(height: 16),
           Text('Kategori', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final kategori in secenekler)
-                ChoiceChip(
-                  avatar: Icon(
-                    kategoriIkon(kategori),
-                    size: 18,
-                    color: kategoriRengi(kategori),
-                  ),
-                  label: Text(kategori.name),
-                  selected: kategori.id == secili?.id,
-                  onSelected: (_) => setState(() => _kategoriId = kategori.id),
-                ),
-            ],
+          CategoryPicker(
+            key: ValueKey('kategori-${_tip.toDb}'),
+            kategoriler: secenekler,
+            seciliId: secili?.id,
+            onSec: (c) => setState(() => _kategoriId = c.id),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -214,7 +203,7 @@ class _RecurringEditorState extends State<RecurringEditor> {
     for (final c in secenekler) {
       if (c.id == _kategoriId) return c;
     }
-    return secenekler.isNotEmpty ? secenekler.first : null;
+    return ilkSecilebilirKategori(secenekler);
   }
 
   Future<void> _kaydet() async {

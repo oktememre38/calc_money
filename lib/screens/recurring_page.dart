@@ -61,7 +61,8 @@ class RecurringPage extends StatelessWidget {
     final tema = Theme.of(context);
     final gruplar = <int, List<RecurringExpense>>{};
     for (final kayit in kayitlar) {
-      gruplar.putIfAbsent(kayit.categoryId, () => []).add(kayit);
+      final kok = state.kategoriKokGetir(state.kategoriGetir(kayit.categoryId));
+      gruplar.putIfAbsent(kok.id, () => []).add(kayit);
     }
 
     // Gider kategorileri önce, sonra gelir kategorileri.
@@ -211,7 +212,7 @@ class _SabitKayitSatiri extends StatelessWidget {
 
     final bildirimMetni = kayit.notify ? 'hatırlatma açık' : 'hatırlatma kapalı';
     final altYazi =
-        'Her ayın ${kayit.dayOfMonth}. günü • $bildirimMetni';
+        '${kategori.name} • Her ayın ${kayit.dayOfMonth}. günü • $bildirimMetni';
 
     return Dismissible(
       key: ValueKey('tekrarlayan-${kayit.id}'),

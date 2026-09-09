@@ -9,7 +9,7 @@ import '../models/transaction_record.dart';
 import '../state/app_state.dart';
 import '../utils/dates.dart';
 import '../utils/money.dart';
-import 'category_visual.dart';
+import 'category_picker.dart';
 
 /// Gelir/gider kaydı ekleme veya düzenleme alt sayfası (bottom sheet).
 ///
@@ -159,7 +159,8 @@ class _TransactionEditorState extends State<TransactionEditor> {
           const SizedBox(height: 16),
           Text('Kategori', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
-          _KategoriSecici(
+          CategoryPicker(
+            key: ValueKey('kategori-${_tip.toDb}'),
             kategoriler: secenekler,
             seciliId: seciliKategori?.id,
             onSec: (c) => setState(() => _kategoriId = c.id),
@@ -201,7 +202,7 @@ class _TransactionEditorState extends State<TransactionEditor> {
     for (final c in secenekler) {
       if (c.id == _kategoriId) return c;
     }
-    return secenekler.isNotEmpty ? secenekler.first : null;
+    return ilkSecilebilirKategori(secenekler);
   }
 
   Future<void> _tarihSec() async {
@@ -252,37 +253,4 @@ class _TransactionEditorState extends State<TransactionEditor> {
 
   static final _sayiFiltresi =
       FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'));
-}
-
-class _KategoriSecici extends StatelessWidget {
-  final List<Category> kategoriler;
-  final int? seciliId;
-  final ValueChanged<Category> onSec;
-
-  const _KategoriSecici({
-    required this.kategoriler,
-    required this.seciliId,
-    required this.onSec,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final kategori in kategoriler)
-          ChoiceChip(
-            avatar: Icon(
-              kategoriIkon(kategori),
-              size: 18,
-              color: kategoriRengi(kategori),
-            ),
-            label: Text(kategori.name),
-            selected: kategori.id == seciliId,
-            onSelected: (_) => onSec(kategori),
-          ),
-      ],
-    );
-  }
 }

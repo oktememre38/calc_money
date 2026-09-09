@@ -101,6 +101,23 @@ class AppState extends ChangeNotifier {
     return const Category(id: 0, name: 'Diğer', typeDb: 1, icon: 'category', color: 0xFF757575);
   }
 
+  /// Bir alt kategorinin en üst (kök) kategorisini bulur.
+  Category kategoriKokGetir(Category kategori) {
+    var suanki = kategori;
+    while (suanki.parentId != null) {
+      Category? ust;
+      for (final k in _kategoriListesi) {
+        if (k.id == suanki.parentId) {
+          ust = k;
+          break;
+        }
+      }
+      if (ust == null) break;
+      suanki = ust;
+    }
+    return suanki;
+  }
+
   // --- Başlangıç ---
   Future<void> init() async {
     await db.open();

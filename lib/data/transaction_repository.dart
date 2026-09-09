@@ -90,8 +90,7 @@ class TransactionRepository {
   Future<List<MonthlySummary>> kategoriYillikAylik(
     int year,
     int categoryId,
-  ) async {
-    final db = await _db.database;
+  ) async {    final db = await _db.database;
     final rows = await db.rawQuery(
       'SELECT '
       'CAST(substr(date, 6, 2) AS INTEGER) AS ay, '
@@ -182,6 +181,42 @@ class TransactionRepository {
     await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Bir ay içinde kategorilere göre gelir/gider toplamları (yüksekten düşüğe).
+  Future<List<KategoriToplamSatir>> ayKategoriDagilimi(
+    int year,
+    int month,
+  ) async {
+    final db = await _db.database;
+    final prefix = _ayPrefiksi(year, month);
+    final rows = await db.rawQuery(
+      'SELECT category_id, type, SUM(amount_kurus) AS toplam '
+      'FROM transactions WHERE date LIKE ? '
+      'GROUP BY category_id, type ORDER BY toplam DESC',
+      ['$prefix%'],
+    );
+    return [
+      for (final row in rows)
+        KategoriToplamSatir(
+          categoryId: row['category_id'] as int,
+          tip: row['type'] as int,
+          toplam: row['toplam'] as int,
+        ),
+    ];
+  }
+
   String _ayPrefiksi(int year, int month) =>
       '$year-${month.toString().padLeft(2, '0')}';
+}
+
+/// Bir ay içinde tek bir kategorinin toplam tutarı.
+class KategoriToplamSatir {
+  final int categoryId;
+  final int tip; // 0 gelir, 1 gider
+  final int toplam;
+
+  const KategoriToplamSatir({
+    required this.categoryId,
+    required this.tip,
+    required this.toplam,
+  });
 }

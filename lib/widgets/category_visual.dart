@@ -30,6 +30,10 @@ IconData kategoriIkonByName(String name) {
       return Icons.shopping_cart;
     case 'subscriptions':
       return Icons.subscriptions;
+    case 'receipt_long':
+      return Icons.receipt_long;
+    case 'phone_android':
+      return Icons.phone_android;
     case 'directions_bus':
       return Icons.directions_bus;
     case 'medical_services':

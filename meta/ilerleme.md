@@ -3,6 +3,24 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (9. oturum) — v0.6.0: alt kategoriler ("Faturalar" üst kategorisi)
+- **İstek:** Fatura türleri (Su/Elektrik/Doğalgaz/İnternet/Telefon) "Faturalar" altında toplansın.
+- **Karar:** Gerçek alt kategori (hierarşi) — kullanıcı seçimi.
+- **Veri:** DB v5 → `categories.parent_id` eklendi. "Faturalar" üst kategorisi + alt kategoriler
+  kuruldu; mevcut Su/Elektrik/Doğalgaz/İnternet kategorileri aynı kimlikle Faturalar'a taşındı
+  (kayıtlar korunur). Telefon alt kategorisi yoksa eklendi. `app_database.dart` (göç + tohum),
+  `models/category.dart` (parentId).
+- **Seçici:** Yeni `widgets/category_picker.dart` — iki aşamalı: önce üst kategori/üst gruplar,
+  üst gruba dokununca alt kategoriler açılır ("← Faturalar" ile geri). Kayıt & sabit editörlerinde
+  kullanıldı; varsayılan seçim yaprak kategori olur.
+- **Sabit Kayıtlar:** Gruplama üst kategoriye göre (örn. Faturalar başlığı altında faturalar);
+  her satırın alt yazısında yaprak kategori adı görünür. `screens/recurring_page.dart`.
+- **Ay dağılım diyagramı (Genel Bakış):** "Son kayıtlar" kartı kaldırıldı; yerine seçili ayın
+  **donut (yuvarlak) dağılım** kartı geldi — Gider/Gelir geçişli, alt kategoriler üst kategoride
+  toplanır, yanında % + tutar listesi. `widgets/distribution_chart.dart` (yeni),
+  `data/transaction_repository.dart` (`ayKategoriDagilimi`), `screens/overview_page.dart`.
+- Sürüm: `0.6.0+8`. `flutter analyze` temiz, `flutter test` 12/12, `flutter build apk` başarılı (53,3 MB).
+
 ## 2026-09-09 (8. oturum) — v0.5.0: arama+filtre, ortalama & karşılaştırma
 - **Arama + filtre (Kayıtlar):** Sayfanın üstünde arama kutusu (not/kategori adına göre)
   + ay içinde kullanılan kategorilerin tek seçimli filtre çipleri ("Tümü" + kategoriler).
