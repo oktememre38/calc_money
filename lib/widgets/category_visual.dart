@@ -28,6 +28,10 @@ IconData kategoriIkonByName(String name) {
       return Icons.wifi;
     case 'shopping_cart':
       return Icons.shopping_cart;
+    case 'shopping_bag':
+      return Icons.shopping_bag;
+    case 'credit_card':
+      return Icons.credit_card;
     case 'subscriptions':
       return Icons.subscriptions;
     case 'receipt_long':

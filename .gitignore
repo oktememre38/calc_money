@@ -17,3 +17,6 @@ local.properties
 Thumbs.db
 .DS_Store
 *.swp
+
+# opencode
+.opencode/

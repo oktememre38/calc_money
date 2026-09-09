@@ -12,6 +12,7 @@ import '../models/record_type.dart';
 import '../models/recurring_expense.dart';
 import '../models/transaction_record.dart';
 import '../services/notification_service.dart';
+import '../utils/dates.dart';
 
 /// Uygulamanın tek durum merkezi (ChangeNotifier).
 ///
@@ -34,11 +35,27 @@ class AppState extends ChangeNotifier {
   DateTime _gorunenAy = DateTime(DateTime.now().year, DateTime.now().month);
   int _gorunenYil = DateTime.now().year;
   String _temaAyar = 'light';
+
+  /// Hesap kesim günü: 0 = kapalı (takvim ayı), 1..28 = kesim günü.
+  int _kesimGunu = 0;
   TransactionRecord? _sonSilinenKayit;
   RecurringExpense? _sonSilinenSabit;
 
   DateTime get gorunenAy => _gorunenAy;
   int get gorunenYil => _gorunenYil;
+
+  /// Bugünün tarihinin ait olduğu dönem ayı (kesim günü dikkate alınır).
+  DateTime get suDonemAy {
+    final bugun = DateTime.now();
+    final kayma = (_kesimGunu > 0 && bugun.day > _kesimGunu) ? 1 : 0;
+    return DateTime(bugun.year, bugun.month + kayma, 1);
+  }
+
+  int get suDonemYil => suDonemAy.year;
+  int get suDonemAyNo => suDonemAy.month;
+
+  int get hesapKesimGunu => _kesimGunu;
+  bool get kesimAktif => _kesimGunu > 0;
 
   ThemeMode get temaModu =>
       _temaAyar == 'dark' ? ThemeMode.dark : ThemeMode.light;
@@ -122,6 +139,8 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     await db.open();
     await _ayarYukle();
+    _gorunenAy = suDonemAy;
+    _gorunenYil = _gorunenAy.year;
     await bildirimler.init();
     await yenile();
   }
@@ -136,6 +155,16 @@ class AppState extends ChangeNotifier {
     );
     if (rows.isNotEmpty) {
       _temaAyar = rows.first['value'] as String;
+    }
+
+    final kesimRows = await d.query(
+      'settings',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: ['kesim_gunu'],
+    );
+    if (kesimRows.isNotEmpty) {
+      _kesimGunu = int.tryParse(kesimRows.first['value'] as String) ?? 0;
     }
   }
 
@@ -153,6 +182,19 @@ class AppState extends ChangeNotifier {
     _temaAyar = karanlik ? 'dark' : 'light';
     await _ayarYaz('tema', _temaAyar);
     notifyListeners();
+  }
+
+  /// Hesap kesim gününü ayarlar (0 = kapalı, 1..28). Değişince tüm kayıtların
+  /// dönem etiketi yeni kurala göre yeniden hesaplanır.
+  Future<void> kesimGunuAyarla(int gun) async {
+    final yeni = gun < 0 ? 0 : (gun > 28 ? 28 : gun);
+    if (yeni == _kesimGunu) return;
+    _kesimGunu = yeni;
+    await _ayarYaz('kesim_gunu', '$_kesimGunu');
+    await islemler.donemleriYenidenHesapla(_kesimGunu);
+    _gorunenAy = suDonemAy;
+    _gorunenYil = _gorunenAy.year;
+    await yenile();
   }
 
   /// Son silinen kaydı veya sabit kaydı geri getirir (undo).
@@ -199,7 +241,7 @@ class AppState extends ChangeNotifier {
   }
 
   void buAyaDon() {
-    _gorunenAy = DateTime(DateTime.now().year, DateTime.now().month);
+    _gorunenAy = suDonemAy;
     _gorunenYil = _gorunenAy.year;
     _ayYukle();
     _yilYukle();
@@ -241,6 +283,7 @@ class AppState extends ChangeNotifier {
       amountKurus: amountKurus,
       categoryId: categoryId,
       date: _dateKey(date),
+      donem: donemEtiketi(date, _kesimGunu),
       note: note,
       recurringId: recurringId,
       createdAt: DateTime.now().toIso8601String(),
@@ -263,6 +306,7 @@ class AppState extends ChangeNotifier {
         amountKurus: amountKurus,
         categoryId: categoryId,
         date: _dateKey(date),
+        donem: donemEtiketi(date, _kesimGunu),
         note: note,
       ),
     );
@@ -390,6 +434,10 @@ class AppState extends ChangeNotifier {
           amountKurus: sabit.amountKurus,
           categoryId: sabit.categoryId,
           date: _dateKey(DateTime(ay.year, ay.month, sabit.dayOfMonth)),
+          donem: donemEtiketi(
+            DateTime(ay.year, ay.month, sabit.dayOfMonth),
+            _kesimGunu,
+          ),
           note: sabit.name,
           recurringId: sabit.id,
           createdAt: DateTime.now().toIso8601String(),

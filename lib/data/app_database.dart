@@ -15,7 +15,7 @@ class AppDatabase {
     final dir = await getDatabasesPath();
     final db = await openDatabase(
       p.join(dir, 'calc_money.db'),
-      version: 5,
+      version: 6,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -52,6 +52,33 @@ class AppDatabase {
         'ALTER TABLE categories ADD COLUMN parent_id INTEGER',
       );
       await _faturaGoc(db);
+    }
+    if (eski < 6) {
+      // v6: işlemlere "hesap dönemi" etiketi (yyyy-MM). Mevcut satırlar
+      // takvim ayına göre doldurulur (kesim günü kapalı).
+      await db.execute(
+        "ALTER TABLE transactions ADD COLUMN donem TEXT NOT NULL DEFAULT ''",
+      );
+      await db.execute(
+        "UPDATE transactions SET donem = substr(date, 1, 7) WHERE donem = ''",
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_trans_donem ON transactions(donem)',
+      );
+      await _yeniKategorileriEkle(db);
+    }
+  }
+
+  /// v6 ile gelen yeni gider kategorilerini eksikse ekler (var olan kurulumlar).
+  Future<void> _yeniKategorileriEkle(Database db) async {
+    for (final tohum in _giderTohum) {
+      await _kategoriBulVeyaEkle(
+        db,
+        name: tohum['name'] as String,
+        type: 1,
+        icon: tohum['icon'] as String,
+        color: tohum['color'] as int,
+      );
     }
   }
 
@@ -122,12 +149,14 @@ class AppDatabase {
         amount_kurus INTEGER NOT NULL CHECK (amount_kurus >= 0),
         category_id INTEGER NOT NULL REFERENCES categories(id),
         date TEXT NOT NULL,
+        donem TEXT NOT NULL DEFAULT '',
         note TEXT NOT NULL DEFAULT '',
         recurring_id INTEGER,
         created_at TEXT NOT NULL
       )
     ''');
     await db.execute('CREATE INDEX idx_trans_date ON transactions(date)');
+    await db.execute('CREATE INDEX idx_trans_donem ON transactions(donem)');
     await db.execute('''
       CREATE TABLE recurring_expenses(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,6 +218,8 @@ class AppDatabase {
     {'name': 'Eğlence', 'icon': 'movie', 'color': 0xFFAD1457},
     {'name': 'Eğitim', 'icon': 'school', 'color': 0xFF283593},
     {'name': 'Giyim', 'icon': 'checkroom', 'color': 0xFF6D4C41},
+    {'name': 'Alışveriş', 'icon': 'shopping_bag', 'color': 0xFF00838F},
+    {'name': 'Taksit', 'icon': 'credit_card', 'color': 0xFF5E35B1},
     {'name': 'Diğer', 'icon': 'category', 'color': 0xFF616161},
   ];
 

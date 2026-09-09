@@ -27,13 +27,23 @@ kaydeder. Uygulama:
 - **Tekrarlayan gider günü:** 1–28 arası. (29–31 günlük aylar karmaşıklığından kaçınıldı.)
   Tekrarlayan kayıt, aylık gider kaydına **otomatik işlenmez**; hatırlatıcı + hızlı
   "kayıt ekle" ön doldurma sağlar. Kullanıcı gerçekleşen kaydı onaylayıp ekler.
+- **Hesap dönemi (kesim günü):** Varsayılan dönem takvim ayıdır. Ayarlar'dan tek genel
+  "hesap kesim günü" (1–28) seçilebilir: kesim gününe kadar (dahil) eklenen kayıt o ayın,
+  kesimden SONRASI bir sonraki ayın dönemine işlenir. Her kayıt, ait olduğu dönemin
+  `yyyy-MM` etiketini `transactions.donem` sütununda saklar; aylık/yıllık gruplama takvim
+  tarihi yerine bu etiket üzerinden yapılır. Kesim günü değişince tüm kayıtların etiketi
+  yeniden hesaplanır.
+- **Ön tanımlı kategoriler:** Tohum seti zamanla genişleyebilir (yeni kategoriler DB göçüyle
+  eklenir, mevcut kullanıcı verisi korunur). Kullanıcı tanımlı kategori hâlâ yol haritasında.
 
 ## Veri modeli
-- `categories(id, name, type[0=gelir,1=gider], icon, color)`
-- `transactions(id, type[0/1], amount_kurus[pozitif], category_id, date[yyyy-MM-dd], note, created_at)`
-- `recurring_expenses(id, name, amount_kurus, day_of_month[1-28], category_id, notify[0/1], active[0/1], created_at)`
+- `categories(id, name, type[0=gelir,1=gider], icon, color, parent_id)`
+- `transactions(id, type[0/1], amount_kurus[pozitif], category_id, date[yyyy-MM-dd],
+  donem[yyyy-MM hesap dönemi etiketi], note, created_at, recurring_id)`
+- `recurring_expenses(id, name, amount_kurus, day_of_month[1-28], category_id, type, notify[0/1], active[0/1], created_at)`
 
-Sorgular, ISO `yyyy-MM-dd`/`yyyy-MM` ön ekiyle (`LIKE '2026-09%'`) aylık/yıllık gruplama yapar.
+Aylık/yıllık sorgular `transactions.donem` etiketiyle (`LIKE '2026-09%'`, yıl `substr(donem,1,4)`) gruplar.
+`date` gerçek tarihi, `donem` ise kesim gününe göre hesaplanan dönem etiketini tutar.
 
 ## Mimari (lib/)
 ```
@@ -80,6 +90,16 @@ Tamamlanan (v0.5.0):
 Tamamlanan (v0.6.0):
 - [x] **Alt kategoriler**: "Faturalar" üst kategorisi altında Su/Elektrik/Doğalgaz/İnternet/Telefon
       (DB v5 parent_id, iki aşamalı seçici, sabitler üst kategoriye göre gruplanır)
+
+Tamamlanan (v0.7.0):
+- [x] **Sabit Kayıtlar sayfasında "Giderler"/"Gelirler" üst bölümleri** — her bölüm altında
+      o türde kaydı olan kategori grupları; boş bölüm "kayıt yok" uyarısı gösterir (kullanıcı isteği)
+- [x] **Yeni gider kategorileri:** Alışveriş, Taksit (taksitlendirme — kredi kartı taksitleri;
+      aynı "Aylara ekle" ile istenen aylara işlenir) (DB v6 göçü, mevcut kurulumlar korunur)
+- [x] **Hesap kesim günü ayarı (tek genel):** Ayarlar (Genel Bakış dişli ikonu). Kesim gününe
+      kadar olan kayıtlar o ayın, sonrası sonraki ayın dönemine işlenir.
+      `transactions.donem` etiketi (DB v6) + sorgular dönem etiketine göre; kesim değişince
+      tüm kayıtlar yeniden hesaplanır.
 
 Bekleyen — yol haritası (öncelik önerisi sırasıyla):
 - [ ] v0.6.x — **Kategori bütçe/limitleri**: kategoriye aylık limit, ilerleme çubuğu, aşınca uyarı

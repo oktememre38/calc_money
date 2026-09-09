@@ -314,7 +314,7 @@ class _DonutPainter extends CustomPainter {
       oldDelegate.dilimler != dilimler;
 }
 
-/// Bir ay�n gelir/gider da��l�m�n� detayl� g�steren tam ekran sayfa.
+/// Bir ayın gelir/gider dağılımını detaylı gösteren tam ekran sayfa.
 class DagilimDetayPage extends StatefulWidget {
   final int year;
   final int month;
@@ -380,7 +380,7 @@ class _DagilimDetayPageState extends State<DagilimDetayPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '${monthName(widget.month)} ${widget.year} � Da��l�m',
+          '${monthName(widget.month)} ${widget.year} • Dağılım',
         ),
         actions: [
           Padding(
@@ -405,7 +405,7 @@ class _DagilimDetayPageState extends State<DagilimDetayPage> {
           : _dilimler.isEmpty
               ? Center(
                   child: Text(
-                    'Bu ay i�in ${_gider ? 'gider' : 'gelir'} kayd� yok.',
+                    'Bu ay için ${_gider ? 'gider' : 'gelir'} kaydı yok.',
                     style: tema.textTheme.bodyMedium?.copyWith(
                       color: tema.colorScheme.onSurfaceVariant,
                     ),

@@ -58,59 +58,152 @@ class RecurringPage extends StatelessWidget {
     AppState state,
     List<RecurringExpense> kayitlar,
   ) {
-    final tema = Theme.of(context);
     final gruplar = <int, List<RecurringExpense>>{};
     for (final kayit in kayitlar) {
       final kok = state.kategoriKokGetir(state.kategoriGetir(kayit.categoryId));
       gruplar.putIfAbsent(kok.id, () => []).add(kayit);
     }
 
-    // Gider kategorileri önce, sonra gelir kategorileri.
-    final kategoriler = <Category>[];
+    final giderKokler = <Category>[];
+    final gelirKokler = <Category>[];
     for (final kategori in state.kategoriListesi) {
-      if (kategori.isGider && gruplar.containsKey(kategori.id)) {
-        kategoriler.add(kategori);
-      }
-    }
-    for (final kategori in state.kategoriListesi) {
-      if (!kategori.isGider && gruplar.containsKey(kategori.id)) {
-        kategoriler.add(kategori);
-      }
+      if (!gruplar.containsKey(kategori.id)) continue;
+      (kategori.isGider ? giderKokler : gelirKokler).add(kategori);
     }
 
-    final satirlar = <Widget>[];
-    var ilk = true;
-    for (final kategori in kategoriler) {
-      final liste = gruplar[kategori.id]!;
-      final aktifToplam = liste.fold<int>(
-        0,
-        (toplam, k) => k.active ? toplam + k.amountKurus : toplam,
-      );
-      final altYazi = aktifToplam > 0
-          ? '${liste.length} kayıt • ${formatMoney(aktifToplam)}'
-          : '${liste.length} kayıt';
+    return [
+      _TipBolumu(
+        baslik: 'Giderler',
+        ikon: Icons.south_west,
+        ikonRenk: giderRengi(context),
+        kokKategoriler: giderKokler,
+        gruplar: gruplar,
+        state: state,
+        bosMesaj: 'Gider kaydı yok.\nKira, abonelik, taksit gibi sabit '
+            'giderlerini + ile ekleyebilirsin.',
+      ),
+      const SizedBox(height: 16),
+      _TipBolumu(
+        baslik: 'Gelirler',
+        ikon: Icons.north_east,
+        ikonRenk: gelirRengi(context),
+        kokKategoriler: gelirKokler,
+        gruplar: gruplar,
+        state: state,
+        bosMesaj: 'Gelir kaydı yok.\nMaaş, kira geliri gibi sabit gelirlerini '
+            '+ ile ekleyebilirsin.',
+      ),
+    ];
+  }
+}
 
-      satirlar.add(
-        ExpansionTile(
-          key: PageStorageKey('grup-${kategori.id}'),
-          initiallyExpanded: ilk,
-          leading: CategoryAvatar(category: kategori, boyut: 34),
-          title: Text(
-            kategori.name,
-            style: tema.textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+/// "Giderler"/"Gelirler" üst bölümü: başlık + içindeki kategori grupları.
+class _TipBolumu extends StatelessWidget {
+  final String baslik;
+  final IconData ikon;
+  final Color ikonRenk;
+  final List<Category> kokKategoriler;
+  final Map<int, List<RecurringExpense>> gruplar;
+  final AppState state;
+  final String bosMesaj;
+
+  const _TipBolumu({
+    required this.baslik,
+    required this.ikon,
+    required this.ikonRenk,
+    required this.kokKategoriler,
+    required this.gruplar,
+    required this.state,
+    required this.bosMesaj,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              Icon(ikon, color: ikonRenk, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                baslik,
+                style: tema.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          subtitle: Text(altYazi),
-          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final kayit in liste) _SabitKayitSatiri(kayit: kayit),
-          ],
         ),
-      );
-      ilk = false;
-    }
-    return satirlar;
+        const SizedBox(height: 8),
+        if (kokKategoriler.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            child: Text(
+              bosMesaj,
+              style: tema.textTheme.bodySmall?.copyWith(
+                color: tema.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          )
+        else
+          for (var i = 0; i < kokKategoriler.length; i++)
+            _KategoriGrubu(
+              kategori: kokKategoriler[i],
+              kayitlar: gruplar[kokKategoriler[i].id]!,
+              state: state,
+              acikBaslangic: i == 0,
+            ),
+      ],
+    );
+  }
+}
+
+/// Tek bir kategoriye ait sabit kayıtların açılır/kapanır grubu.
+class _KategoriGrubu extends StatelessWidget {
+  final Category kategori;
+  final List<RecurringExpense> kayitlar;
+  final AppState state;
+
+  /// Bölümün ilk grubuysa sayfa ilk açıldığında açık başlar.
+  final bool acikBaslangic;
+
+  const _KategoriGrubu({
+    required this.kategori,
+    required this.kayitlar,
+    required this.state,
+    this.acikBaslangic = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final aktifToplam = kayitlar.fold<int>(
+      0,
+      (toplam, k) => k.active ? toplam + k.amountKurus : toplam,
+    );
+    final altYazi = aktifToplam > 0
+        ? '${kayitlar.length} kayıt • ${formatMoney(aktifToplam)}'
+        : '${kayitlar.length} kayıt';
+
+    return ExpansionTile(
+      key: PageStorageKey('grup-${kategori.id}'),
+      initiallyExpanded: acikBaslangic,
+      leading: CategoryAvatar(category: kategori, boyut: 34),
+      title: Text(
+        kategori.name,
+        style: tema.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(altYazi),
+      childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final kayit in kayitlar) _SabitKayitSatiri(kayit: kayit),
+      ],
+    );
   }
 }
 

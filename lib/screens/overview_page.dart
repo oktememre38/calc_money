@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'ayarlar_page.dart';
 import 'category_analysis.dart';
 import 'dagilim.dart';
 import '../state/app_state.dart';
@@ -27,6 +28,18 @@ class OverviewPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Genel Bakış'),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const AyarlarPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Ayarlar',
+          ),
           IconButton(
             onPressed: () {
               final appState = context.read<AppState>();

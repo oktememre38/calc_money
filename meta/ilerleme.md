@@ -3,6 +3,44 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (12. oturum) — v0.7.0: Gelir/Gider bölümleri + yeni kategoriler + hesap kesim günü
+Bu sürüm, kullanıcının istediği üç işi birden içerir (tek sürüm kararı):
+- **Sabit Kayıtlar sayfası hiyerarşisi:** Düz kategori listesi yerine artık her zaman
+  görünen **"Giderler" ve "Gelirler" üst bölümleri** var; her bölümde o türde kaydı olan
+  kategori grupları (açılır/kapanır) yer alıyor. Boş bölümler "kayıt yok" uyarısı gösteriyor.
+  `screens/recurring_page.dart` (yeniden yapılandırıldı: `_TipBolumu`, `_KategoriGrubu`).
+- **Yeni gider kategorileri:** "Alışveriş" (shopping_bag) ve **"Taksit"** (credit_card) eklendi.
+  Taksitli alışverişler Sabit Kayıtlar → Taksit altında kaydedilip mevcut "Aylara ekle" ile
+  istenen aylara işleniyor. DB **v6** göçü: mevcut kurulumlarda eksik tohum kategorileri eklenir.
+- **Hesap kesim günü:** Ayarlar (Genel Bakış'taki dişli ikonu → `screens/ayarlar_page.dart`, yeni)
+  tek genel kesim günü (1–28 / Kapalı) seçtiriyor. Kural: kesim gününe kadar (dahil) kayıt o ayın,
+  kesimden sonrası **sonraki ayın** dönemine işlenir. Uygulama: `transactions.donem` (yyyy-MM)
+  etiketi saklanır (DB v6), tüm aylık/yıllık sorgular takvim `date` yerine `donem` etiketine göre
+  gruplar; kesim günü değişince `TransactionRepository.donemleriYenidenHesapla` ile tüm kayıtlar
+  yeniden etiketlenir. Görünüm "bugünün dönemi"ne göre açılır (AppState.suDonemAy), yıl/analiz
+  sayfalarındaki "bu ay" vurgusu da dönem etiketini kullanır.
+- **Ek düzeltme:** `screens/dagilim.dart` içinde bozuk karakterle (mojibake) kayıtlı 3 metin
+  (başlık/yorum/boş durum) düzeltildi.
+- Dosyalar: `app_database.dart` (v6), `models/transaction_record.dart` (donem),
+  `data/transaction_repository.dart`, `state/app_state.dart` (kesim ayarı + dönem),
+  `utils/dates.dart` (`donemEtiketi`), `widgets/category_visual.dart`, `screens/recurring_page.dart`,
+  `screens/ayarlar_page.dart` (yeni), `screens/overview_page.dart` (dişli), `annual_page.dart`,
+  `category_analysis.dart`, `dagilim.dart`, `pubspec.yaml` → `0.7.0+10`.
+- Sürüm: `0.7.0+10`. `flutter analyze` temiz, `flutter test` 16/16, `flutter build apk --release`
+  başarılı (53,5 MB).
+- Not: Telefonda KALDIRMADAN üzerine güncelle (DB v6 göçü otomatik çalışır). Kurulumdan sonra
+  Ayarlar'dan kesim gününü dene; veriler yeni döneme göre yeniden gruplanır.
+
+## 2026-09-09 (11. oturum) — Yeni makinede geliştirme ortamı kuruldu
+Reponun yeni klonlandığı bu makinede sıfırdan kurulum yapıldı (önceden Flutter/Java/Android SDK yoktu):
+- Flutter **3.47.3** stable → `C:\flutter` (Dart 3.13.3). `C:\flutter\bin` kullanıcı PATH'ine eklendi.
+- JDK **Temurin 17.0.20.1** → `C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot` (`JAVA_HOME`).
+- Android Studio 2026.1.4.7 kuruldu (`C:\Program Files\Android\Android Studio`) — derleme gerekmiyor, IDE için.
+- Android SDK → `C:\Android\Sdk` (`ANDROID_HOME` = `ANDROID_SDK_ROOT`): cmdline-tools 19.0,
+  platform-tools, `platforms;android-36`, `build-tools;36.0.0`. Lisanslar kabul edildi.
+- Doğrulama: `flutter doctor` Android toolchain ✓, `flutter analyze` temiz, `flutter test` 12/12.
+- Not: `flutter` PATH'i için **yeni bir terminal** açmak gerekir.
+
 ## 2026-09-09 (10. oturum) — v0.6.1: dağılım detayı + hızlı ay atlama
 - **Donut detayı:** Genel Bakış'ta dağılım kartına dokununca **detay ekranı** açılıyor
   (Gider/Gelir geçişli; her kategori için çubuk + tutar + %; toplam). Dosya

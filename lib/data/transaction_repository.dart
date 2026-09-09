@@ -1,6 +1,7 @@
 import '../models/aggregate.dart';
 import '../models/monthly_summary.dart';
 import '../models/transaction_record.dart';
+import '../utils/dates.dart';
 import 'app_database.dart';
 
 /// Gelir/gider kayıtları için veri erişimi.
@@ -14,14 +15,14 @@ class TransactionRepository {
     final prefix = _ayPrefiksi(year, month);
     final rows = await db.query(
       'transactions',
-      where: 'date LIKE ?',
+      where: 'donem LIKE ?',
       whereArgs: ['$prefix%'],
       orderBy: 'date DESC, id DESC',
     );
     return rows.map(TransactionRecord.fromMap).toList();
   }
 
-  /// Tek bir ayın gelir/gider toplamı.
+  /// Tek bir ayın (dönemin) gelir/gider toplamı.
   Future<Aggregate> aggregateByMonth(int year, int month) async {
     final db = await _db.database;
     final prefix = _ayPrefiksi(year, month);
@@ -29,7 +30,7 @@ class TransactionRepository {
       'SELECT '
       'COALESCE(SUM(CASE WHEN type = 0 THEN amount_kurus END), 0) AS gelir, '
       'COALESCE(SUM(CASE WHEN type = 1 THEN amount_kurus END), 0) AS gider '
-      'FROM transactions WHERE date LIKE ?',
+      'FROM transactions WHERE donem LIKE ?',
       ['$prefix%'],
     );
     final row = rows.first;
@@ -44,10 +45,10 @@ class TransactionRepository {
     final db = await _db.database;
     final rows = await db.rawQuery(
       'SELECT '
-      'CAST(substr(date, 6, 2) AS INTEGER) AS ay, '
+      'CAST(substr(donem, 6, 2) AS INTEGER) AS ay, '
       'COALESCE(SUM(CASE WHEN type = 0 THEN amount_kurus END), 0) AS gelir, '
       'COALESCE(SUM(CASE WHEN type = 1 THEN amount_kurus END), 0) AS gider '
-      'FROM transactions WHERE substr(date, 1, 4) = ? '
+      'FROM transactions WHERE substr(donem, 1, 4) = ? '
       'GROUP BY ay ORDER BY ay',
       ['$year'],
     );
@@ -73,7 +74,7 @@ class TransactionRepository {
       'category_id, '
       'COALESCE(SUM(CASE WHEN type = 0 THEN amount_kurus END), 0) AS gelir, '
       'COALESCE(SUM(CASE WHEN type = 1 THEN amount_kurus END), 0) AS gider '
-      'FROM transactions WHERE substr(date, 1, 4) = ? '
+      'FROM transactions WHERE substr(donem, 1, 4) = ? '
       'GROUP BY category_id',
       ['$year'],
     );
@@ -90,14 +91,15 @@ class TransactionRepository {
   Future<List<MonthlySummary>> kategoriYillikAylik(
     int year,
     int categoryId,
-  ) async {    final db = await _db.database;
+  ) async {
+    final db = await _db.database;
     final rows = await db.rawQuery(
       'SELECT '
-      'CAST(substr(date, 6, 2) AS INTEGER) AS ay, '
+      'CAST(substr(donem, 6, 2) AS INTEGER) AS ay, '
       'COALESCE(SUM(CASE WHEN type = 0 THEN amount_kurus END), 0) AS gelir, '
       'COALESCE(SUM(CASE WHEN type = 1 THEN amount_kurus END), 0) AS gider '
       'FROM transactions '
-      'WHERE substr(date, 1, 4) = ? AND category_id = ? '
+      'WHERE substr(donem, 1, 4) = ? AND category_id = ? '
       'GROUP BY ay ORDER BY ay',
       ['$year', categoryId],
     );
@@ -113,6 +115,26 @@ class TransactionRepository {
       for (var ay = 1; ay <= 12; ay++)
         MonthlySummary(month: ay, aggregate: map[ay] ?? const Aggregate()),
     ];
+  }
+
+  /// Hesap kesim günü değişince tüm kayıtların dönem etiketini günceller.
+  Future<void> donemleriYenidenHesapla(int kesimGunu) async {
+    final db = await _db.database;
+    final rows = await db.query('transactions', columns: ['id', 'date']);
+    if (rows.isEmpty) return;
+
+    final batch = db.batch();
+    for (final row in rows) {
+      final tarih = DateTime.parse(row['date'] as String);
+      final donem = donemEtiketi(tarih, kesimGunu);
+      batch.update(
+        'transactions',
+        {'donem': donem},
+        where: 'id = ?',
+        whereArgs: [row['id'] as int],
+      );
+    }
+    await batch.commit(noResult: true);
   }
 
   /// Bir sabit kayıt düzenlendiğinde, o sabit kayıttan üretilmiş aylık kayıtları
@@ -190,7 +212,7 @@ class TransactionRepository {
     final prefix = _ayPrefiksi(year, month);
     final rows = await db.rawQuery(
       'SELECT category_id, type, SUM(amount_kurus) AS toplam '
-      'FROM transactions WHERE date LIKE ? '
+      'FROM transactions WHERE donem LIKE ? '
       'GROUP BY category_id, type ORDER BY toplam DESC',
       ['$prefix%'],
     );

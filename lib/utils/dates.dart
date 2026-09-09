@@ -36,3 +36,15 @@ String dayShortLabelFromKey(String key) {
   final ay = int.parse(parts[1]);
   return '$gun ${monthName(ay)}';
 }
+
+/// Bir tarihin "hesap dönemi" etiketini döndürür ("yyyy-MM").
+///
+/// [kesimGunu] 0 ise dönem takvim ayıyla aynıdır. Aksi halde kullanıcının
+/// hesap kesim günüdür (1..28): kesim gününe kadar (dahil) olan tarihler o
+/// ayın dönemine, kesimden SONRAKİ günler ise bir sonraki ayın dönemine
+/// sayılır.
+/// Örnek: kesim günü 10 iken 20 Eylül tarihi -> "2026-10" (Ekim dönemi).
+String donemEtiketi(DateTime tarih, int kesimGunu) {
+  if (kesimGunu <= 0 || tarih.day <= kesimGunu) return monthKey(tarih);
+  return monthKey(DateTime(tarih.year, tarih.month + 1, 1));
+}

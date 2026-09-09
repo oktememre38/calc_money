@@ -271,9 +271,8 @@ class _CategoryMonthPageState extends State<CategoryMonthPage> {
           '${_yuzdeMetni(degisim)}';
     }
 
-    final buAy = DateTime.now().year == widget.yil
-        ? DateTime.now().month
-        : 0;
+    final state = context.watch<AppState>();
+    final buAy = state.suDonemYil == widget.yil ? state.suDonemAyNo : 0;
 
     return Scaffold(
       appBar: AppBar(
