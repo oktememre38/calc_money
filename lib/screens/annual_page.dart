@@ -66,7 +66,6 @@ class _AylarTablosu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context);
     final buAy = DateTime.now().year == yil ? DateTime.now().month : 0;
 
     return Padding(
@@ -76,7 +75,7 @@ class _AylarTablosu extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Column(
             children: [
-              _BaslikSatir(),
+              const _BaslikSatir(),
               const Divider(height: 1),
               for (final ozet in ozetler)
                 _AySatir(
@@ -91,22 +90,27 @@ class _AylarTablosu extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _BaslikSatir() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+class _BaslikSatir extends StatelessWidget {
+  const _BaslikSatir();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          const Expanded(flex: 2, child: Text('Ay')),
-          const Expanded(
+          Expanded(flex: 2, child: Text('Ay')),
+          Expanded(
             flex: 3,
             child: Text('Gelir', textAlign: TextAlign.right),
           ),
-          const Expanded(
+          Expanded(
             flex: 3,
             child: Text('Gider', textAlign: TextAlign.right),
           ),
-          const Expanded(
+          Expanded(
             flex: 3,
             child: Text('Denge', textAlign: TextAlign.right),
           ),

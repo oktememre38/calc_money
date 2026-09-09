@@ -3,6 +3,29 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (2. oturum) — Flutter + Android kurulumu tamamlandı; ilk derleme başarılı
+**Bu makinenin ortamı (devam için önemli):**
+- Flutter **3.47.2** stable → `E:\flutter` (Dart 3.13.2). `E:\flutter\bin` kullanıcı PATH'inde.
+- Android SDK → `E:\Android\Sdk` (`ANDROID_HOME` = `ANDROID_SDK_ROOT` = bu adres, kullanıcı ortam değişkeni).
+  Kurulu: `platform-tools`, `platforms;android-36`, `build-tools;36.0.0`. Derleme sırasında otomatik olarak
+  NDK 28.2 ve `platform-34` de eklendi. Komut satırı araçları `E:\Android\Sdk\cmdline-tools\latest`.
+- Lisanslar kabul edildi; `flutter doctor` Android toolchain: ✓.
+- Not: Windows masaüstü (Visual Studio C++) uyarısı hedefimiz olmadığı için yok sayılır.
+
+**Yapılanlar:**
+- `flutter create --org com.calcmoney --platforms=android,ios --project-name calc_money .` ile
+  `android/` ve `ios/` üretildi (lib kodları korundu). Şablon `test/widget_test.dart` silindi.
+- `flutter analyze` başlangıçta 20 sorun buldu → hepsi düzeltildi (Türkçe karakterli değişken adları,
+  `MediaQuery.viewInsetsOf` kullanımı, `zonedSchedule`'ın `UILocalNotificationDateInterpretation` enum'ı, `const` uyarıları vb.).
+- Android bildirim ayarları eklendi: `android/app/build.gradle.kts` → desugaring 2.1.5 açıldı;
+  `AndroidManifest.xml` → bildirim izinleri (POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, VIBRATE,
+  SCHEDULE_EXACT_ALARM) + zamanlanmış bildirim alıcıları eklendi; uygulama etiketi "CalcMoney".
+- **Sonuç:** `flutter analyze` temiz, `flutter test` 12/12 geçti,
+  `flutter build apk --debug` başarılı → `build\app\outputs\flutter-apk\app-debug.apk`.
+
+**Sıradaki adım (cihaz):** Gerçek telefon USB ile bağlanıp geliştirici modu açılınca
+`flutter run` (veya APK'yı telefona kur). Uygulamayı elle test et: ekleme, ay/yıl özeti, sabit gider + bildirim.
+
 ## 2026-09-09 — Proje kurulumu ve ilk kod (MVP kod tabanı)
 - Karar alındı: Flutter + cihaz içi SQLite + kapsam "Temel + hatırlatıcılar".
   Detaylar: `meta/proje-bilgisi.md`.

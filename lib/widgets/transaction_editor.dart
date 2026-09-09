@@ -29,7 +29,7 @@ Future<void> showTransactionEditor(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (ctx) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx)),
+      padding: MediaQuery.viewInsetsOf(ctx),
       child: TransactionEditor(mevcut: mevcut, kaynak: kaynak),
     ),
   );
@@ -63,7 +63,7 @@ class _TransactionEditorState extends State<TransactionEditor> {
     _tip = m?.type ?? RecordType.gider;
     final ilkTutar = m?.amountKurus ?? k?.amountKurus ?? 0;
     _tutar = TextEditingController(
-      text: ilkTutar > 0 ? kurusToGirdi(iltutar) : '',
+      text: ilkTutar > 0 ? kurusToGirdi(ilkTutar) : '',
     );
     _not = TextEditingController(text: m?.note ?? k?.name ?? '');
     _tarih = m != null ? DateTime.parse(m.date) : DateTime.now();

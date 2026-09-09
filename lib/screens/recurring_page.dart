@@ -70,7 +70,7 @@ enum _Islem { kayitEkle, duzenle, aktiflik, sil }
 class _SabitGiderSatiri extends StatelessWidget {
   final RecurringExpense kayit;
 
-  const _SabitGiderSatiri({super.key, required this.kayit});
+  const _SabitGiderSatiri({required this.kayit});
 
   @override
   Widget build(BuildContext context) {
@@ -182,9 +182,8 @@ class _SabitGiderSatiri extends StatelessWidget {
       baslik: 'Sabit gider silinsin mi?',
       mesaj: '${kayit.name}: ${formatMoney(kayit.amountKurus)}',
     );
-    if (onay) {
-      final state = context.read<AppState>();
-      await state.tekrarlayanSil(kayit);
-    }
+    if (!onay || !context.mounted) return;
+    final state = context.read<AppState>();
+    await state.tekrarlayanSil(kayit);
   }
 }

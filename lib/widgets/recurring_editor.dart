@@ -22,7 +22,7 @@ Future<void> showRecurringEditor(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (ctx) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx)),
+      padding: MediaQuery.viewInsetsOf(ctx),
       child: RecurringEditor(mevcut: mevcut),
     ),
   );

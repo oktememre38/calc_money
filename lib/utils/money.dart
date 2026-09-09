@@ -9,8 +9,8 @@ String formatMoney(int kurus) {
   final negatif = kurus < 0;
   final mutlak = kurus.abs();
   final lira = mutlak ~/ 100;
-  final kuruş = mutlak % 100;
-  final sonuc = '₺${_binlikAyir(lira)},${kuruş.toString().padLeft(2, '0')}';
+  final kurusKismi = mutlak % 100;
+  final sonuc = '₺${_binlikAyir(lira)},${kurusKismi.toString().padLeft(2, '0')}';
   return negatif ? '-$sonuc' : sonuc;
 }
 
@@ -27,9 +27,9 @@ String _binlikAyir(int deger) {
 /// Kuruş değerini form alanı için "149,99" gibi metne çevirir.
 String kurusToGirdi(int kurus) {
   final lira = kurus ~/ 100;
-  final kuruş = kurus % 100;
-  if (kuruş == 0) return '$lira';
-  return '$lira,${kuruş.toString().padLeft(2, '0')}';
+  final kurusKismi = kurus % 100;
+  if (kurusKismi == 0) return '$lira';
+  return '$lira,${kurusKismi.toString().padLeft(2, '0')}';
 }
 
 /// Kullanıcının girdiği metni kuruşa çevirir. Boş/geçersizse null döner.

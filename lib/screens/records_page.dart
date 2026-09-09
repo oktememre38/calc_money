@@ -42,7 +42,7 @@ class RecordsPage extends StatelessWidget {
           const SizedBox(height: 4),
           Expanded(
             child: state.ayKayitlari.isEmpty
-                ? EmptyState(
+                ? const EmptyState(
                     icon: Icons.receipt_long,
                     mesaj:
                         'Bu ay için henüz kayıt yok.\nSağ alttaki + butonu ile gelir veya gider ekleyebilirsin.',
@@ -95,7 +95,7 @@ class _KayitSatiri extends StatelessWidget {
   final AppState state;
   final TransactionRecord kayit;
 
-  const _KayitSatiri({super.key, required this.state, required this.kayit});
+  const _KayitSatiri({required this.state, required this.kayit});
 
   @override
   Widget build(BuildContext context) {
