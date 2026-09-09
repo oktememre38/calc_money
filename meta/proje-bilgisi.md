@@ -28,6 +28,9 @@ kaydeder. Uygulama:
 - **Sonlu sabit kayıt (taksit):** Sabit kayda opsiyonel `toplam_ay` girilir (0 = sürekli).
   O sabit kayda bağlı oluşturulan aylık kayıt sayısı `toplam_ay`'a ulaşınca sabit kayıt
   otomatik silinir (aylık kayıtlar durur).
+- **"Aylara ekle" (v0.8.1):** Pencerede kayıtlı ayların tiki kaldırılabilir; bu, o aya ait
+  kaydı geri alır (yalnızca o sabit kayıttan üretilmiş kayıtlar silinir). Boş aylar seçilerek
+  eklenmeye devam edilir.
 - **Hesap dönemi (kesim günü):** Varsayılan dönem takvim ayıdır. Ayarlar'dan tek genel
   "hesap kesim günü" (1–28) seçilebilir: kesim gününe kadar (dahil) eklenen kayıt o ayın,
   kesimden SONRASI bir sonraki ayın dönemine işlenir. Her kayıt, ait olduğu dönemin

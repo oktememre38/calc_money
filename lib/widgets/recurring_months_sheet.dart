@@ -7,11 +7,12 @@ import '../utils/dates.dart';
 import '../utils/money.dart';
 import 'category_visual.dart';
 
-/// Sabit bir kaydın hangi aylara ekleneceğini seçme penceresi.
+/// Sabit bir kaydın hangi aylara ekleneceği / hangi aylardan kaldırılacağı
+/// penceresi.
 ///
 /// Bu aydan başlayarak önümüzdeki 12 ay listelenir. Daha önce aynı sabit
-/// kayıtla (tip+kategori+tutar+not) eklenmiş aylar "kayıtlı" gösterilir ve
-/// kilitlenir; yalnızca boş aylar seçilebilir.
+/// kayıtla (tip+kategori+tutar+not) eklenmiş aylar "kayıtlı" görünür; tikini
+/// kaldırınca o aya ait kayıt geri alınır (silinir). Boş aylar seçilip eklenir.
 Future<void> showRecurringMonthsSheet(
   BuildContext context,
   RecurringExpense gider,
@@ -39,7 +40,8 @@ class RecurringMonthsSheet extends StatefulWidget {
 
 class _RecurringMonthsSheetState extends State<RecurringMonthsSheet> {
   late final List<DateTime> _aylar;
-  final Set<String> _secili = <String>{};
+  final Set<String> _eklenecek = <String>{};
+  final Set<String> _silinecek = <String>{};
   Map<String, bool> _varDurum = <String, bool>{};
   bool _hazir = false;
 
@@ -66,39 +68,69 @@ class _RecurringMonthsSheetState extends State<RecurringMonthsSheet> {
 
   String _anahtar(DateTime ay) => '${ay.year}-${ay.month}';
 
-  bool _kayitliVar(DateTime ay) => _varDurum[_anahtar(ay)] ?? false;
+  bool _kayitli(DateTime ay) => _varDurum[_anahtar(ay)] ?? false;
 
-  List<DateTime> get _seciliAylar =>
-      _aylar.where((ay) => _secili.contains(_anahtar(ay))).toList();
+  List<DateTime> get _eklenecekAylar =>
+      _aylar.where((ay) => _eklenecek.contains(_anahtar(ay))).toList();
 
-  void _hepsiniSec() {
+  List<DateTime> get _silinecekAylar => _aylar
+      .where((ay) => _kayitli(ay) && _silinecek.contains(_anahtar(ay)))
+      .toList();
+
+  void _bosAylariSec() {
     setState(() {
-      _secili.clear();
+      _silinecek.clear();
+      _eklenecek.clear();
       for (final ay in _aylar) {
-        if (!_kayitliVar(ay)) _secili.add(_anahtar(ay));
+        if (!_kayitli(ay)) _eklenecek.add(_anahtar(ay));
+      }
+    });
+  }
+
+  void _kayitlilariKaldir() {
+    setState(() {
+      _eklenecek.clear();
+      _silinecek.clear();
+      for (final ay in _aylar) {
+        if (_kayitli(ay)) _silinecek.add(_anahtar(ay));
       }
     });
   }
 
   void _temizle() {
-    setState(_secili.clear);
+    setState(() {
+      _eklenecek.clear();
+      _silinecek.clear();
+    });
   }
 
   Future<void> _kaydet() async {
     final state = context.read<AppState>();
-    final secili = _seciliAylar;
-    if (secili.isEmpty) return;
+    final eklenecek = _eklenecekAylar;
+    final silinecek = _silinecekAylar;
 
-    final sonuc = await state.tekrarlayanTopluEkle(_gider, secili);
+    var eklendi = 0;
+    var atlandi = 0;
+    var silindi = 0;
+
+    // Önce kaldırılacaklar silinir, sonra eklenecekler eklenir.
+    if (silinecek.isNotEmpty) {
+      silindi = await state.tekrarlayanAyKayitlariniKaldir(_gider, silinecek);
+    }
+    if (eklenecek.isNotEmpty) {
+      final sonuc = await state.tekrarlayanTopluEkle(_gider, eklenecek);
+      eklendi = sonuc.eklenen;
+      atlandi = sonuc.atlanan;
+    }
+
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(
-      content: Text(
-        sonuc.atlanan > 0
-            ? '${sonuc.eklenen} aya eklendi, ${sonuc.atlanan} ay zaten kayıtlıydı.'
-            : '${sonuc.eklenen} aya eklendi.',
-      ),
-    ));
+    final parcalar = <String>[];
+    if (silindi > 0) parcalar.add('$silindi ay kaldırıldı');
+    if (eklendi > 0) parcalar.add('$eklendi ay eklendi');
+    if (atlandi > 0) parcalar.add('$atlandi ay zaten kayıtlıydı');
+    final mesaj = parcalar.isEmpty ? 'Değişiklik yapılmadı.' : parcalar.join(', ');
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(mesaj)));
     Navigator.pop(context);
   }
 
@@ -107,9 +139,8 @@ class _RecurringMonthsSheetState extends State<RecurringMonthsSheet> {
     final state = context.watch<AppState>();
     final kategori = state.kategoriGetir(_gider.categoryId);
     final tema = Theme.of(context);
-    final secimSayisi = _secili.length;
-    final kayitliSayisi =
-        _aylar.where((ay) => _kayitliVar(ay)).length;
+    final kayitliSayisi = _aylar.where((ay) => _kayitli(ay)).length;
+    final degisiklikSayisi = _eklenecek.length + _silinecek.length;
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -158,8 +189,8 @@ class _RecurringMonthsSheetState extends State<RecurringMonthsSheet> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Eklemek istediğin ayları seç. Daha önce eklenen aylar "kayıtlı" '
-              'görünür ve kilitlidir; onları Kayıtlar\'dan düzenleyip silebilirsin.',
+              'Kayıtlı ayların tikini kaldırarak o aya ait kaydı silebilir, '
+              'boş ayları seçerek ekleyebilirsin.',
               style: tema.textTheme.bodySmall
                   ?.copyWith(color: tema.colorScheme.onSurfaceVariant),
             ),
@@ -168,18 +199,22 @@ class _RecurringMonthsSheetState extends State<RecurringMonthsSheet> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  'Bu liste için $kayitliSayisi ay zaten kayıtlı.',
+                  '$kayitliSayisi ay zaten kayıtlı.',
                   style: tema.textTheme.labelSmall
                       ?.copyWith(color: tema.colorScheme.primary),
                 ),
               ),
             if (_hazir)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              Wrap(
+                alignment: WrapAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: _hepsiniSec,
+                    onPressed: _bosAylariSec,
                     child: const Text('Boş ayları seç'),
+                  ),
+                  TextButton(
+                    onPressed: _kayitlilariKaldir,
+                    child: const Text('Kayıtlıları kaldır'),
                   ),
                   TextButton(
                     onPressed: _temizle,
@@ -194,47 +229,40 @@ class _RecurringMonthsSheetState extends State<RecurringMonthsSheet> {
               )
             else
               for (var i = 0; i < _aylar.length; i++)
-                CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(
-                    monthYearLabel(_aylar[i].year, _aylar[i].month),
-                    style: tema.textTheme.bodyMedium?.copyWith(
-                      fontWeight: _secili.contains(_anahtar(_aylar[i]))
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  subtitle: Text(_kayitliVar(_aylar[i])
-                      ? 'kayıtlı'
-                      : (i == 0 ? 'bu ay' : '')),
-                  value: _kayitliVar(_aylar[i]) ||
-                      _secili.contains(_anahtar(_aylar[i])),
-                  onChanged: _kayitliVar(_aylar[i])
-                      ? null
-                      : (deger) {
-                          setState(() {
-                            final key = _anahtar(_aylar[i]);
-                            if (deger == true) {
-                              _secili.add(key);
-                            } else {
-                              _secili.remove(key);
-                            }
-                          });
-                        },
+                _AySatiri(
+                  ay: _aylar[i],
+                  kayitli: _kayitli(_aylar[i]),
+                  eklenecek: _eklenecek.contains(_anahtar(_aylar[i])),
+                  silinecek: _silinecek.contains(_anahtar(_aylar[i])),
+                  ilk: i == 0,
+                  onDegis: (secili) {
+                    final key = _anahtar(_aylar[i]);
+                    setState(() {
+                      if (_kayitli(_aylar[i])) {
+                        // Kayıtlı ay: tik kaldırılınca silinecek.
+                        if (secili) {
+                          _silinecek.remove(key);
+                        } else {
+                          _silinecek.add(key);
+                        }
+                      } else if (secili) {
+                        _eklenecek.add(key);
+                      } else {
+                        _eklenecek.remove(key);
+                      }
+                    });
+                  },
                 ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed:
-                  (!_hazir || secimSayisi == 0) ? null : _kaydet,
+              onPressed: (!_hazir || degisiklikSayisi == 0) ? null : _kaydet,
               icon: const Icon(Icons.check),
               label: Text(
                 !_hazir
                     ? 'Kontrol ediliyor...'
-                    : secimSayisi == 0
-                        ? 'Seçilecek yeni ay yok'
-                        : 'Seçilen aylara ekle ($secimSayisi)',
+                    : degisiklikSayisi == 0
+                        ? 'Değişiklik yok'
+                        : 'Uygula ($degisiklikSayisi)',
               ),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -243,6 +271,60 @@ class _RecurringMonthsSheetState extends State<RecurringMonthsSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AySatiri extends StatelessWidget {
+  final DateTime ay;
+  final bool kayitli;
+  final bool eklenecek;
+  final bool silinecek;
+  final bool ilk;
+  final ValueChanged<bool> onDegis;
+
+  const _AySatiri({
+    required this.ay,
+    required this.kayitli,
+    required this.eklenecek,
+    required this.silinecek,
+    required this.ilk,
+    required this.onDegis,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    // Kaydedince bu ay "kayıtlı" mı olacak?
+    final value = kayitli ? !silinecek : eklenecek;
+
+    String altYazi;
+    if (kayitli && silinecek) {
+      altYazi = 'kaydı silinecek';
+    } else if (kayitli) {
+      altYazi = 'kayıtlı • tik kaldırınca silinir';
+    } else if (eklenecek) {
+      altYazi = 'eklenecek';
+    } else {
+      altYazi = ilk ? 'bu ay' : '';
+    }
+
+    return CheckboxListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      title: Text(
+        monthYearLabel(ay.year, ay.month),
+        style: tema.textTheme.bodyMedium?.copyWith(
+          fontWeight: (eklenecek || silinecek)
+              ? FontWeight.w600
+              : FontWeight.normal,
+          color: silinecek ? tema.colorScheme.error : null,
+        ),
+      ),
+      subtitle: Text(altYazi),
+      value: value,
+      onChanged: (s) => onDegis(s ?? false),
     );
   }
 }

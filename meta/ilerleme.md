@@ -3,6 +3,16 @@
 Bu dosya tarihli, kısa maddelerle projenin durumunu tutar. En yeni madde en üsttedir.
 Her tamamlanan iş için yeni bir bölüm ekle.
 
+## 2026-09-09 (14. oturum) — v0.8.1: "Aylara ekle"de kayıtlı ayların tikini kaldırma
+- Kullanıcı: seçilen ayların tikini geri kaldıramıyordu (kayıtlı aylar kilitliydi).
+- Çözüm: `widgets/recurring_months_sheet.dart` yeniden yazıldı — artık her ayın tikini
+  kaldırmak serbest. Kayıtlı bir ayın tiki kaldırılırsa o aya ait kayıt **silinir**
+  ("Uygula" ile); boş aylar seçilerek eklenebilir. "Boş ayları seç" / "Kayıtlıları kaldır" /
+  "Temizle" kısayolları eklendi; sonuç snackbar ile özetlenir.
+- `state/app_state.dart`: `tekrarlayanAyKayitlariniKaldir` — yalnızca bu sabit kayıttan
+  üretilmiş (bağlı `recurring_id` veya birebir eski şablon) kayıtları siler.
+- Sürüm: `0.8.1+12`. analyze temiz, test 16/16, `flutter build apk --release` başarılı (52,4 MB).
+
 ## 2026-09-09 (13. oturum) — v0.8.0: taksit bitişi + bildirimler kaldırıldı
 - **Sonlu sabit kayıt (taksit):** Sabit kayıt formuna "Toplam ay" alanı eklendi (boş = sürekli;
   taksit için 5 gibi). Bir sabit kayda bağlı (`recurring_id`) oluşturulan aylık kayıt sayısı

@@ -481,6 +481,39 @@ class AppState extends ChangeNotifier {
     return durum;
   }
 
+  /// "Aylara ekle" penceresinde tikini kaldıran (kayıtlı) ayların kayıtlarını
+  /// siler. Yalnızca bu sabit kayıttan üretilmiş kayıtlar silinir
+  /// (bağlı `recurring_id` veya birebir eski şablon değerleriyle eşleşen).
+  /// Dönen değer: silinen kayıt sayısı.
+  Future<int> tekrarlayanAyKayitlariniKaldir(
+    RecurringExpense sabit,
+    List<DateTime> aylar,
+  ) async {
+    var silinen = 0;
+    final gorulen = <String>{};
+    for (final ay in aylar) {
+      final anahtar = '${ay.year}-${ay.month}';
+      if (!gorulen.add(anahtar)) continue;
+      final mevcutlar = await islemler.listByMonth(ay.year, ay.month);
+      for (final kayit in mevcutlar) {
+        final bagli =
+            kayit.recurringId == sabit.id && sabit.id != null;
+        final eskiSablon = kayit.recurringId == null &&
+            kayit.type == sabit.type &&
+            kayit.categoryId == sabit.categoryId &&
+            kayit.amountKurus == sabit.amountKurus &&
+            kayit.note == sabit.name;
+        if (!bagli && !eskiSablon) continue;
+        final id = kayit.id;
+        if (id == null) continue;
+        await islemler.delete(id);
+        silinen++;
+      }
+    }
+    await _kayitSonrasiYenile();
+    return silinen;
+  }
+
   // --- Yardımcı yükleyiciler ---
   Future<void> _ayYukle() async {
     _ayKayitlari = await islemler.listByMonth(_gorunenAy.year, _gorunenAy.month);
